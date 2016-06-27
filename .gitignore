@@ -1,0 +1,7 @@
+*.log
+main.sqlite
+setenv.bat
+setenv*.bat
+*.exe
+tmp/*
+app_service_account.json

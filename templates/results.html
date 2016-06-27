@@ -1,0 +1,47 @@
+<div style='margin:0 20px;margin-top:20px;width: 80%;text-align:left;'>
+	
+	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
+
+	<form action='{{ pref .FormAction }}'>
+		<input type="input"  name="Gemeinde"    id="Gemeinde"   value="{{.Gemeinde}}"   >        <br />
+		<input type="input"  name="Schluessel"  id="Schluessel" value="{{.Schluessel}}" >        <br />
+		<input type="input"  name="Start"       id="Start"      value="{{.ParamStart}}" >        <br />
+		<input type="input"  name="Count"       id="Count"      value="{{.ParamCount}}" >        <br />
+		<input type="submit" name="submit"      id=""           value=" Submit " accesskey="s" >
+	</form>
+
+	{{if ne .Url "" }}
+		<a href='{{.Url}}'  target='second' >{{.Url}}</a><br>
+	{{end}}
+	{{if ne .UrlCmp "" }}
+		<a href='{{.UrlCmp}}'  target='second' >{{.UrlCmp}}</a><br>
+	{{end}}
+
+
+	{{if ne .RespBytes "" }}
+		<br/>
+		Response Bytes <br/>
+		<textarea cols='145' rows='32'>
+			{{ .RespBytes }}
+		</textarea>
+	{{end}}
+
+	{{if ne .StructDump "" }}
+		<br/>
+		Struct Dump <br/>
+		<textarea cols='145' rows='32'>
+			{{ .StructDump }}
+		</textarea>
+	{{end}}
+
+
+
+</div>
+
+
+<script type="text/javascript">
+	$( document ).ready(function() {
+		// $( '#tab-body input' ).filter(":visible").first().focus();
+		$( '#Url' ).focus();
+	});
+</script>
