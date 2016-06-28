@@ -32,7 +32,7 @@ var Config Config3
 
 func init() {
 
-	for _, v := range []string{"SQL_PW", "GOOGLE_APPLICATION_CREDENTIALS"} {
+	for _, v := range []string{"SQL_PW"} {
 		util.EnvVar(v)
 	}
 

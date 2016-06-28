@@ -9,6 +9,19 @@ import (
 	"github.com/kataras/iris"
 )
 
+// Needs improvement
+func EffectiveParamInt(c *iris.Context, key string, defaultVal ...int) int {
+	fl, err := EffectiveParamFloat(c, key)
+	if err != nil {
+		if len(defaultVal) > 0 {
+			return defaultVal[0]
+		} else {
+			return 0
+		}
+	}
+	return int(fl)
+}
+
 // EffectiveParamFloat is a wrapper around EffectiveParam
 // with subsequent parsing into float
 func EffectiveParamFloat(c *iris.Context, key string, defaultVal ...float64) (float64, error) {

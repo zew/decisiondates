@@ -61,6 +61,27 @@ func results(c *iris.Context) {
 
 	if util.EffectiveParam(c, "submit", "none") != "none" {
 
+		//
+		//
+		communities := []mdl.Community{}
+		sql := `SELECT 
+				      community_key
+					, cleansed as community_name
+			FROM 			` + gorpx.TableName(mdl.Community{}) + ` t1
+			WHERE 			1=1
+				AND		community_id >= :start_id
+				AND		community_id <  :end_id
+			`
+		args := map[string]interface{}{
+			"start_id": util.EffectiveParamInt(c, "Start", 1),
+			"end_id":   util.EffectiveParamInt(c, "Start", 1) + util.EffectiveParamInt(c, "Count", 5),
+		}
+
+		_, err = gorpx.DBMap().Select(&communities, sql, args)
+
+		//
+		logx.Printf("%+v\n", communities)
+
 		if false {
 
 			myUrl := url.URL{}
@@ -129,12 +150,11 @@ func results(c *iris.Context) {
 			offset := int64(3)
 			maxResults := int64(8)
 
-			searchString := util.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen")
-			if schl := util.EffectiveParam(c, "Schluessel", ""); schl != "" {
-				searchString = fmt.Sprintf("%v %v", searchString, schl)
-			}
-			search := cseService.Cse.List(util.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"))
+			search := cseService.Cse.List(communities[0].Name)
 			search.Cx("000184963688878042004:kcoarvtcg7q")
+			search.ExcludeTerms("factfish")
+			// search.ExactTerms(communities[0].Key)
+			search.OrTerms("hebesätze hebesatz")
 			search.FileType("pdf")
 			search.Start(start)
 			search.Num(offset)
@@ -155,6 +175,16 @@ func results(c *iris.Context) {
 					display += fmt.Sprintf("%v\n", r.Snippet)
 					// display += fmt.Sprintf("%+v\n", r)
 					display += fmt.Sprintf("\n")
+
+					pdf := mdl.Pdf{}
+					pdf.Key = communities[0].Key
+					pdf.Name = communities[0].Name
+					pdf.Url = r.Link
+					pdf.Snippet1 = fmt.Sprintf("%v\n\n%v", r.Title, r.Snippet)
+					err = gorpx.DBMap().Insert(&pdf)
+					if err != nil {
+						c.Text(200, err.Error())
+					}
 				}
 				start = start + offset
 				// No more search results?
