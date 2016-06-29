@@ -111,18 +111,18 @@ func processPdf(c *iris.Context) {
 					break
 				}
 				page := rdr2.Page(j)
-				content.WriteString(fmt.Sprintf("opening page %v\n", j))
+				content.WriteString(fmt.Sprintf("\nopening page %v\n", j))
 				logx.Printf("   opening page %v\n", j)
 
 				cn := page.Content()
-
 				texts := cn.Text
 				for k := 0; k < len(texts); k++ {
 					if k > 444 {
 						// logx.Printf("       not opening more than 444 - is %v\n", len(texts))
-						break
+						// break
 					}
 					content.WriteString(texts[k].S)
+					// content.WriteString(" ")
 				}
 				content.WriteString(" ")
 			}
