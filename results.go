@@ -13,16 +13,18 @@ import (
 
 	"github.com/kataras/iris"
 
+	"github.com/zew/assessmentratedate/config"
 	"github.com/zew/assessmentratedate/gorpx"
 	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
 	"github.com/zew/assessmentratedate/util"
 )
 
-func getService() (*cus.Service, error) {
+func customSearchService() (*cus.Service, error) {
 
+	// Alternative way to get a client;
 	// requires env GOOGLE_APPLICATION_CREDENTIALS=./app_service_account.json
-	// Does not work
+	// Does *not* yield a custom search client.
 	if false {
 		client, err := google.DefaultClient(oauth2.NoContext)
 		_, _ = client, err
@@ -41,13 +43,13 @@ func getService() (*cus.Service, error) {
 	}
 	client := conf.Client(oauth2.NoContext)
 
-	customsearchService, err := cus.New(client)
+	cses, err := cus.New(client)
 	if err != nil {
 		fmt.Printf("#3\t%v", err)
 		return nil, err
 	}
 
-	return customsearchService, nil
+	return cses, nil
 
 }
 
@@ -56,10 +58,12 @@ func results(c *iris.Context) {
 	var err error
 	display := ""
 	respBytes := []byte{}
-	community := mdl.Community{}
 	strUrl := ""
 
 	if util.EffectiveParam(c, "submit", "none") != "none" {
+
+		start := util.EffectiveParamInt(c, "Start", 1)
+		end := util.EffectiveParamInt(c, "Start", 1) + util.EffectiveParamInt(c, "Count", 5)
 
 		//
 		//
@@ -73,94 +77,40 @@ func results(c *iris.Context) {
 				AND		community_id <  :end_id
 			`
 		args := map[string]interface{}{
-			"start_id": util.EffectiveParamInt(c, "Start", 1),
-			"end_id":   util.EffectiveParamInt(c, "Start", 1) + util.EffectiveParamInt(c, "Count", 5),
+			"start_id": start,
+			"end_id":   end,
 		}
-
 		_, err = gorpx.DBMap().Select(&communities, sql, args)
-
-		//
+		util.CheckErr(err)
 		logx.Printf("%+v\n", communities)
 
-		if false {
+		cseService, err := customSearchService()
+		if err != nil {
+			c.Text(200, err.Error())
+			return
+		}
 
-			myUrl := url.URL{}
-			myUrl.Host = "www.googleapis.com"
-			myUrl.Path = "customsearch/v1"
-			myUrl.Scheme = "https"
-			logx.Printf("host is %v", myUrl.String())
+		for i := 0; i < len(communities); i++ {
 
-			// https://developers.google.com/apis-explorer/#p/customsearch/v1/search.cse.list?q=Schwetzingen&_h=1&
-			// exactTerms: Identifies a phrase that all documents in the search results must contain (string)
-			// excludeTerms
-			// fileType: pdf
-			// num: Number of search results to return (integer)
+			display += fmt.Sprintf("============================\n")
+			display += fmt.Sprintf("%v\n", communities[i].Name)
 
-			vals := map[string]string{
-				"key":   "AIzaSyDS56qRpWj3o_xfGqxwbP5oqW9qr72Poww", // "Server key 1" from libertarian islands
-				"cx":    "000184963688878042004:kcoarvtcg7q",       // searchEngineId for google custom search engine "cse"
-				"q":     util.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"),
-				"start": util.EffectiveParam(c, "Start", "1"),
-				"num":   util.EffectiveParam(c, "Count", "5"),
-				"safe":  "off",
-			}
-
-			queryStr := ""
-			for k, v := range vals {
-				queryStr += fmt.Sprintf("%v=%v&", k, v)
-			}
-			logx.Printf("queryStr is %v", queryStr)
-
-			strUrl = myUrl.String() + "/?" + queryStr
-			req, err := http.NewRequest("GET", strUrl, nil)
-			util.CheckErr(err)
-
-			resp, err := util.HttpClient().Do(req)
-			util.CheckErr(err)
-			defer resp.Body.Close()
-
-			respBytes, err = ioutil.ReadAll(resp.Body)
-			util.CheckErr(err)
-
-			// Parse
-			if err != nil {
-				c.Text(200, err.Error())
-				return
-			}
-
-			err = gorpx.DBMap().Insert(&community)
-			if err != nil {
-				c.Text(200, err.Error())
-			}
-
-			display = util.IndentedDump(community)
-			// c.Text(200, display)
-
-		} else {
-
-			cseService, err := getService()
-			if err != nil {
-				c.Text(200, err.Error())
-				return
-			}
-
+			// https://godoc.org/google.golang.org/api/customsearch/v1
 			// CSE Limits you to 10 pages of results with max 10 results per page
 
+			search := cseService.Cse.List(communities[i].Name)
+			search.Cx("000184963688878042004:kcoarvtcg7q")
+			// search.ExactTerms(communities[i].Key)
+			search.ExcludeTerms("factfish")
+			search.OrTerms("hebesätze hebesatz")
+			search.FileType("pdf")
+			search.Safe("off")
 			start := int64(1)
 			offset := int64(3)
 			maxResults := int64(8)
 
-			search := cseService.Cse.List(communities[0].Name)
-			search.Cx("000184963688878042004:kcoarvtcg7q")
-			search.ExcludeTerms("factfish")
-			// search.ExactTerms(communities[0].Key)
-			search.OrTerms("hebesätze hebesatz")
-			search.FileType("pdf")
 			search.Start(start)
 			search.Num(offset)
-			search.Safe("off")
-
-			display += "so far\n"
 
 			for start < maxResults {
 				search.Start(int64(start))
@@ -177,10 +127,11 @@ func results(c *iris.Context) {
 					display += fmt.Sprintf("\n")
 
 					pdf := mdl.Pdf{}
-					pdf.Key = communities[0].Key
-					pdf.Name = communities[0].Name
+					pdf.CommunityKey = communities[i].Key
+					pdf.CommunityName = communities[i].Name
 					pdf.Url = r.Link
-					pdf.Snippet1 = fmt.Sprintf("%v\n\n%v", r.Title, r.Snippet)
+					pdf.Title = r.Title
+					pdf.SnippetGoogle = r.Snippet
 					err = gorpx.DBMap().Insert(&pdf)
 					if err != nil {
 						c.Text(200, err.Error())
@@ -222,7 +173,7 @@ func results(c *iris.Context) {
 
 		Url:        strUrl,
 		UrlCmp:     "https://www.googleapis.com/customsearch/v1?q=Schwetzingen&key=AIzaSyDS56qRpWj3o_xfGqxwbP5oqW9qr72Poww&cx=000184963688878042004:kcoarvtcg7q",
-		FormAction: PathResults,
+		FormAction: PathCommunityResults,
 
 		Gemeinde:   util.EffectiveParam(c, "Gemeinde", "Schwetzingen"),
 		Schluessel: util.EffectiveParam(c, "Schluessel", "08 2 26 084"),
@@ -233,4 +184,67 @@ func results(c *iris.Context) {
 	err = c.Render("results.html", s)
 	util.CheckErr(err)
 
+}
+
+// Here we get the plain JSON response.
+// The request needs to be decorated with a searchEngineId and a
+// and with some app engine credentials
+//
+// There is no need for a special oauth2 client.
+func plainJsonResponse(c *iris.Context) (string, []byte, error) {
+
+	display := ""
+	respBytes := []byte{}
+	community := mdl.Community{}
+	strUrl := ""
+
+	myUrl := url.URL{}
+	myUrl.Host = "www.googleapis.com"
+	myUrl.Path = "customsearch/v1"
+	myUrl.Scheme = "https"
+	logx.Printf("host is %v", myUrl.String())
+
+	// https://developers.google.com/apis-explorer/#p/customsearch/v1/search.cse.list?q=Schwetzingen&_h=1&
+
+	vals := map[string]string{
+		"key":   config.Config.AppEngineServerKey,
+		"cx":    config.Config.GoogleCustomSearchId,
+		"q":     util.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"),
+		"start": util.EffectiveParam(c, "Start", "1"),
+		"num":   util.EffectiveParam(c, "Count", "5"),
+		"safe":  "off",
+	}
+
+	queryStr := ""
+	for k, v := range vals {
+		queryStr += fmt.Sprintf("%v=%v&", k, v)
+	}
+	logx.Printf("queryStr is %v", queryStr)
+
+	strUrl = myUrl.String() + "/?" + queryStr
+	req, err := http.NewRequest("GET", strUrl, nil)
+	util.CheckErr(err)
+
+	resp, err := util.HttpClient().Do(req)
+	util.CheckErr(err)
+	defer resp.Body.Close()
+
+	respBytes, err = ioutil.ReadAll(resp.Body)
+	util.CheckErr(err)
+
+	// Parse
+	if err != nil {
+		c.Text(200, err.Error())
+		return display, respBytes, err
+	}
+
+	err = gorpx.DBMap().Insert(&community)
+	if err != nil {
+		c.Text(200, err.Error())
+	}
+
+	display = util.IndentedDump(community)
+	// c.Text(200, display)
+
+	return display, respBytes, nil
 }

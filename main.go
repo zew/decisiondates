@@ -21,13 +21,13 @@ var funcMapAll = map[string]interface{}{
 var irisConfig = config.Iris{}
 
 const (
-	PathResults = "/results01"
-	PathDetails = "/results02"
+	PathCommunityResults = "/community-search-results"
+	PathProcessPdfs      = "/process-pdfs"
 )
 
 var links = map[string]string{
-	"Results 01": PathResults,
-	"Site Infos": PathDetails,
+	"Search Results per Community": PathCommunityResults,
+	"Process PDF Files":            PathProcessPdfs,
 }
 
 // The url path prefix
@@ -78,7 +78,8 @@ func main() {
 	i01.Get(Pref(""), index)
 	i01.Get(Pref("/"), index)
 
-	i01.Get(Pref(PathResults), results)
+	i01.Get(Pref(PathCommunityResults), results)
+	i01.Get(Pref(PathProcessPdfs), processPdf)
 
 	logx.Printf("setting up sql server...")
 	gorpx.DBMap()

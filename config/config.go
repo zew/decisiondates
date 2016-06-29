@@ -20,12 +20,14 @@ type SQLHost struct {
 }
 
 type Config3 struct {
-	Email        string             `json:"email"`
-	VersionMajor int                `json:"version_major"`
-	VersionMinor int                `json:"version_minor"`
-	AppName      string             `json:"app_name"`
-	SQLite       bool               `json:"sql_lite"`
-	SQLHosts     map[string]SQLHost `json:"sql_hosts"`
+	Email                string             `json:"email"`
+	VersionMajor         int                `json:"version_major"`
+	VersionMinor         int                `json:"version_minor"`
+	AppName              string             `json:"app_name"`
+	GoogleCustomSearchId string             `json:"google_custom_search_id"` // searchEngineId for google custom search engine "cse"
+	AppEngineServerKey   string             `json:"appengine_server_key"`    // "Server key 1" from an app engine app
+	SQLite               bool               `json:"sql_lite"`
+	SQLHosts             map[string]SQLHost `json:"sql_hosts"`
 }
 
 var Config Config3
