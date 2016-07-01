@@ -14,7 +14,7 @@ type Pdf struct {
 	Url           string `db:"pdf_url, size:600, not null"`   // SetUniqueTogether(community_key, pdf_url )
 	Title         string `db:"pdf_title, size:200, not null"` // SetUniqueTogether(community_key, pdf_url )
 	SnippetGoogle string `db:"pdf_snippet_google, size:400, not null"`
-	Content       string `db:"pdf_text, size:4200, not null"`
+	Content       string `db:"pdf_text, size:100200, not null"`
 	Snippet1      string `db:"pdf_snippet1, size:400, not null"`
 	Snippet2      string `db:"pdf_snippet2, size:400, not null"`
 	Snippet3      string `db:"pdf_snippet3, size:400, not null"`
