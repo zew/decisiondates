@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/kataras/iris"
 	"github.com/pbberlin/pdf"
@@ -18,7 +19,7 @@ import (
 	"github.com/zew/assessmentratedate/util"
 )
 
-const maxPages = 217
+const maxPages = 300
 
 func processPdf(c *iris.Context) {
 
@@ -36,11 +37,6 @@ func processPdf(c *iris.Context) {
 		//
 		pdfs := []mdl.Pdf{}
 		sql := `SELECT 
-					/*
-				      community_key
-					, cleansed as community_name
-
-					*/
 					*
 			FROM 			` + gorpx.TableName(mdl.Pdf{}) + ` t1
 			WHERE 			1=1
@@ -56,22 +52,19 @@ func processPdf(c *iris.Context) {
 		util.CheckErr(err)
 		gorpx.DBMap().TraceOff()
 
-		for i := 0; i < len(pdfs); i++ {
-			logx.Printf("%-4v  %55v %v", i, util.UpTo(pdfs[i].Url, 70), pdfs[i].Title) // dont print out all fields
-		}
+		// for i := 0; i < len(pdfs); i++ {
+		// 	logx.Printf("%-4v  %55v %v", i, util.UpTo(pdfs[i].Url, 70), pdfs[i].Title) // dont print out all fields
+		// }
 
 		for i := 0; i < len(pdfs); i++ {
 
 			display += fmt.Sprintf("============================\n")
 			display += fmt.Sprintf("%v\n", pdfs[i].CommunityName)
 
-			// vals := map[string]string{
-			// 	"ResponseGroup": "Country",
-			// }
-			// queryStr := ""
-			// for k, v := range vals {
-			// 	queryStr += fmt.Sprintf("%v=%v&", k, v)
-			// }
+			if pdfs[i].Frequency > 2 {
+				display += fmt.Sprintf("skipping due to frequency %v \n\n", pdfs[i].Frequency)
+				continue
+			}
 
 			req, err := http.NewRequest("GET", pdfs[i].Url, nil)
 			strUrl = pdfs[i].Url
@@ -84,11 +77,12 @@ func processPdf(c *iris.Context) {
 			respBytes, err = ioutil.ReadAll(resp.Body)
 			util.CheckErr(err)
 
-			ioutil.WriteFile(fmt.Sprintf("pdfNumber%03v.pdf", pdfs[i].Id), respBytes, os.FileMode(777))
+			// ioutil.WriteFile(fmt.Sprintf("pdfNumber%03v.pdf", pdfs[i].Id), respBytes, os.FileMode(777))
 
 			rdr := bytes.NewReader(respBytes)
 
-			msg1 := fmt.Sprintf("opening pdf #%-2v %v\n", i, util.UpToR(pdfs[i].Url, 70))
+			msg1 := fmt.Sprintf("opening pdf #%-2v id %002v %v \n", i, pdfs[i].Id, util.UpToR(pdfs[i].Url, 55)) // avoid %v missings
+			msg1 = strings.Replace(msg1, "%v", "%%v", -1)
 			logx.Printf(msg1)
 			display += msg1
 
@@ -113,11 +107,7 @@ func processPdf(c *iris.Context) {
 
 				cn, err := extractContent(&page)
 				if err != nil {
-					logx.Printf("%v", err)
-					continue
-				}
-				if cn == nil {
-					logx.Printf("page content is nil")
+					logx.Printf("Page_%002v: %v", j, err)
 					continue
 				}
 				texts := cn.Text
@@ -141,7 +131,7 @@ func processPdf(c *iris.Context) {
 	s := struct {
 		HTMLTitle string
 		Title     string
-		Links     map[string]string
+		Links     []struct{ Title, Url string }
 
 		FormAction string
 		Gemeinde   string
@@ -155,8 +145,8 @@ func processPdf(c *iris.Context) {
 		StructDump template.HTML
 		RespBytes  template.HTML
 	}{
-		HTMLTitle: AppName() + " top sites",
-		Title:     AppName() + " top sites",
+		HTMLTitle: AppName() + " - download pdfs and extract their text content",
+		Title:     AppName() + " - download pdfs and extract their text content",
 		Links:     links,
 
 		StructDump: template.HTML(display),

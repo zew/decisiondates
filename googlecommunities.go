@@ -147,10 +147,43 @@ func results(c *iris.Context) {
 		}
 	}
 
+	{
+		sql := `
+			/* update frequencies of pdf urls*/
+			UPDATE
+				pdf t1
+				INNER JOIN (
+					SELECT pdf_url, count(*) anz 
+					FROM pdf t2
+					GROUP BY pdf_url
+			) t2 USING (pdf_url)
+			SET t1.pdf_frequency = t2.anz
+      `
+		args := map[string]interface{}{}
+		updateRes, err := gorpx.DBMap().Exec(sql, args)
+		util.CheckErr(err)
+		logx.Printf("updated frequencies: %+v\n", updateRes)
+
+	}
+
+	{
+		sql := `
+			/* remove pdf_text and snippets for noisy pdfs */
+			UPDATE pdf
+			SET pdf_text = '', pdf_snippet1= '', pdf_snippet2= '', pdf_snippet3= ''
+			WHERE pdf_frequency > 2
+      `
+		args := map[string]interface{}{}
+		updateRes, err := gorpx.DBMap().Exec(sql, args)
+		util.CheckErr(err)
+		logx.Printf("emptied : %+v\n", updateRes)
+
+	}
+
 	s := struct {
 		HTMLTitle string
 		Title     string
-		Links     map[string]string
+		Links     []struct{ Title, Url string }
 
 		FormAction string
 		Gemeinde   string

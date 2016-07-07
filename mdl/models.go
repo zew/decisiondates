@@ -11,7 +11,8 @@ type Pdf struct {
 	Id            int    `db:"pdf_id, primarykey, autoincrement"`
 	CommunityKey  string `db:"community_key, size:40, not null"`
 	CommunityName string `db:"community_name, size:200, not null"`
-	Url           string `db:"pdf_url, size:600, not null"`   // SetUniqueTogether(community_key, pdf_url )
+	Url           string `db:"pdf_url, size:600, not null"` // SetUniqueTogether(community_key, pdf_url )
+	Frequency     int    `db:"pdf_frequency, not null"`
 	Title         string `db:"pdf_title, size:200, not null"` // SetUniqueTogether(community_key, pdf_url )
 	SnippetGoogle string `db:"pdf_snippet_google, size:400, not null"`
 	Content       string `db:"pdf_text, size:100200, not null"`

@@ -23,11 +23,19 @@ var irisConfig = config.Iris{}
 const (
 	PathCommunityResults = "/community-search-results"
 	PathProcessPdfs      = "/process-pdfs"
+	PathProcessText      = "/process-text"
 )
 
-var links = map[string]string{
+var links = []struct{ Title, Url string }{
+	{"Search Results per Community", PathCommunityResults},
+	{"Extract Text from PDF Files", PathProcessPdfs},
+	{"Search in PDF Text", PathProcessText},
+}
+
+var linksOld = map[string]string{
 	"Search Results per Community": PathCommunityResults,
-	"Process PDF Files":            PathProcessPdfs,
+	"Extract Text from PDF Files":  PathProcessPdfs,
+	"Search in PDF Text":           PathProcessText,
 }
 
 // The url path prefix
@@ -80,6 +88,7 @@ func main() {
 
 	i01.Get(Pref(PathCommunityResults), results)
 	i01.Get(Pref(PathProcessPdfs), processPdf)
+	i01.Get(Pref(PathProcessText), processText)
 
 	logx.Printf("setting up sql server...")
 	gorpx.DBMap()

@@ -11,7 +11,7 @@ func index(c *iris.Context) {
 	s := struct {
 		HTMLTitle string
 		Title     string
-		Links     map[string]string
+		Links     []struct{ Title, Url string }
 	}{
 		HTMLTitle: AppName() + " main",
 		Title:     AppName() + " main",

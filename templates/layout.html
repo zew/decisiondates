@@ -35,8 +35,8 @@
 	<div style="border-top: 2px solid #aaa;margin-top:20px;font-size: 80%;">
 
 		<a href="{{ pref "" }}"       accesskey="h" >Home</a><br />
-		{{ range $linktext, $url := .Links }}
-			<a xxtarget="second" href="{{ pref $url }}">{{ $linktext }}</a><br/>
+		{{ range $idx, $elem := .Links }}
+			<a xxtarget="second" href="{{ pref $elem.Url }}">{{ $elem.Title }}</a><br/>
 		{{end}}
 
 	</div>
