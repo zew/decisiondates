@@ -14,12 +14,30 @@ import (
 	"github.com/zew/assessmentratedate/util"
 )
 
+const showLastXDates = 10
+const maxFrequency = 2
+
 func processText(c *iris.Context) {
 
 	var err error
 	display := ""
 	strUrl := ""
 
+	r1, err := regexp.Compile("Hebes([aä]+)tz[e]")
+	util.CheckErr(err)
+
+	//
+	// original regex: ("[0-9]{2}[./ ]+[0-9]{2}[./ ]+[0-9]{4}")
+	weekdays := "1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|01|02|03|04|05|06|07|08|09"
+	monthsLong := "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
+	monthsShort := "Jan|Feb|Mrz|Apr|Mai|Jun|Jul|Aug|Sept|Sep|Okt|Nov|Dez"
+	monthsNumbered := "1|2|3|4|5|6|7|8|9|01|02|03|04|05|06|07|08|09|10|11|12"
+	yearsLong := "2012|2013|2014|2015|2016"
+	all := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", weekdays, monthsLong, monthsShort, monthsNumbered, yearsLong)
+	r2, err := regexp.Compile(all)
+	util.CheckErr(err)
+
+	//
 	if util.EffectiveParam(c, "submit", "none") != "none" {
 
 		start := util.EffectiveParamInt(c, "Start", 1)
@@ -34,6 +52,7 @@ func processText(c *iris.Context) {
 			WHERE 			1=1
 				AND		pdf_id >= :start_id
 				AND		pdf_id <  :end_id
+
 			`
 		args := map[string]interface{}{
 			"start_id": start,
@@ -42,62 +61,86 @@ func processText(c *iris.Context) {
 		_, err = gorpx.DBMap().Select(&pdfs, sql, args)
 		util.CheckErr(err)
 
-		r1, err := regexp.Compile("Hebes([aä]+)tz[e]")
-		util.CheckErr(err)
-
-		// original regex: ("[0-9]{2}[./ ]+[0-9]{2}[./ ]+[0-9]{4}")
-		weekdays := "1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|01|02|03|04|05|06|07|08|09"
-		monthsLong := "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
-		monthsShort := "Jan|Feb|Mrz|Apr|Mai|Jun|Jul|Aug|Sept|Sep|Okt|Nov|Dez"
-		monthsNumbered := "1|2|3|4|5|6|7|8|9|01|02|03|04|05|06|07|08|09|10|11|12"
-		yearsLong := "2012|2013|2014|2015|2016"
-		all := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", weekdays, monthsLong, monthsShort, monthsNumbered, yearsLong)
-		r2, err := regexp.Compile(all)
-		util.CheckErr(err)
-
 		for i := 0; i < len(pdfs); i++ {
 
 			// r1.MatchString("peach")
 			addressablePdf := pdfs[i]
-			display += fmt.Sprintf("<a href='%v' target='pdf'>%v: %v</a>\n", addressablePdf.Url, addressablePdf.CommunityName, addressablePdf.Title)
 
-			if addressablePdf.Frequency > 2 {
-				display += fmt.Sprintf("skipping due to frequency %v \n\n", addressablePdf.Frequency)
+			if addressablePdf.Frequency > maxFrequency {
+				// display += fmt.Sprintf(
+				// 	"Skipping <a href='%v' target='pdf' >%v: %v</a> &nbsp; due to frequency %v \n ",
+				// 	addressablePdf.Url, addressablePdf.CommunityName, addressablePdf.Title, addressablePdf.Frequency)
 				continue
 			}
 
-			{
-				matchPos := r1.FindAllStringIndex(addressablePdf.Content, -1)
-				addressablePdf.Snippet1 = fmt.Sprintf("%v", matchPos)
-				addressablePdf.Snippet2 = ""
-				for idx, occurrence := range matchPos {
-					sn := snippetIt(occurrence, addressablePdf.Content, 10, 30)
-					addressablePdf.Snippet2 += fmt.Sprintf("#%02v: Pos:%v  \n%v  \n\n", idx, occurrence, sn)
+			pages := []mdl.Page{}
+			sql := `SELECT 	*
+			FROM 			` + gorpx.TableName(mdl.Page{}) + ` t1
+			WHERE 			1=1
+				AND		page_url = :page_url   `
+			args := map[string]interface{}{
+				"page_url": addressablePdf.Url,
+			}
+			_, err = gorpx.DBMap().Select(&pages, sql, args)
+			util.CheckErr(err)
+
+			var foundAllPdf bool
+			for j := 0; j < len(pages); j++ {
+
+				p := pages[j]
+
+				var found1, found2 bool
+
+				// search for the hebesatz
+				{
+					matchPos := r1.FindAllStringIndex(p.Content, -1)
+					addressablePdf.Snippet1 = fmt.Sprintf("%v", matchPos)
+					addressablePdf.Snippet2 = ""
+					for idx, occurrence := range matchPos {
+						found1 = true
+						sn := snippetIt(occurrence, p.Content, 20, 110)
+						addressablePdf.Snippet2 += fmt.Sprintf("#%03v: %02v%%  %v  \n\n", idx, 100*occurrence[0]/len(p.Content), sn)
+					}
 				}
-				// display += addressablePdf.Snippet2
-			}
 
-			// search for the date
-			{
-				matchPosAll := r2.FindAllStringSubmatchIndex(addressablePdf.Content, -1)
-				addressablePdf.Snippet3 = ""
-				for idx, occurrence := range matchPosAll {
-					sn := snippetIt(occurrence[2:4], addressablePdf.Content, 6, 12)
-					addressablePdf.Snippet3 += fmt.Sprintf("#%03v: %v  %v  \n\n", idx, formatPos(occurrence, len(addressablePdf.Content)), sn)
+				// search for the date
+				{
+					matchPosAll := r2.FindAllStringSubmatchIndex(p.Content, -1)
+					addressablePdf.Snippet3 = ""
+					if len(matchPosAll) > showLastXDates {
+						matchPosAll = append(matchPosAll[:showLastXDates/2], matchPosAll[len(matchPosAll)-showLastXDates/2:]...)
+					}
+					for idx, occurrence := range matchPosAll {
+						found2 = true
+						sn := snippetIt(occurrence[2:4], p.Content, 12, 40)
+						addressablePdf.Snippet3 += fmt.Sprintf("#%03v: %v  %v  \n\n", idx, formatPos(occurrence, len(p.Content)), sn)
 
+					}
 				}
-				display += addressablePdf.Snippet3
+
+				if found1 || found2 {
+					foundAllPdf = true
+					display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>%v: %v - Seite %02v</a>\n",
+						addressablePdf.Url, p.Number, addressablePdf.CommunityName, addressablePdf.Title, p.Number)
+
+					display += util.Ellipsoider(addressablePdf.Snippet2, 800)
+					display += addressablePdf.Snippet3
+					display += "\n"
+				}
+
+				//
+				//
+				numRows, err := gorpx.DBMap().Update(&addressablePdf)
+				if err != nil {
+					display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &addressablePdf.Snippet2, &addressablePdf.Snippet3)
+				}
+				// util.CheckErr(err)
+				logx.Printf("%v rows updated", numRows)
 			}
 
-			//
-			//
-			numRows, err := gorpx.DBMap().Update(&addressablePdf)
-			if err != nil {
-				display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &addressablePdf.Snippet2, &addressablePdf.Snippet3)
+			if foundAllPdf {
+				display += "<hr/>\n\n"
 			}
-			// util.CheckErr(err)
-			logx.Printf("%v rows updated", numRows)
-			display += "\n\n"
 
 		}
 	}
@@ -143,8 +186,8 @@ func processText(c *iris.Context) {
 func formatPos(occurrence []int, fullLen int) string {
 
 	pct := float64(occurrence[0]) / float64(fullLen) * 100
-	return fmt.Sprintf("%02f%%", pct)
-	return fmt.Sprintf("%04.1f%%", pct)
+	return fmt.Sprintf("%02.0f%% ", pct)
+	return fmt.Sprintf("%04.1f%% ", pct)
 
 }
 

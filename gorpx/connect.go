@@ -75,9 +75,21 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	{
 		mp := IndependentDbMapper(db)
 		t := mp.AddTable(mdl.Pdf{})
+		t.SetUniqueTogether("community_key", "pdf_url")
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := IndependentDbMapper(db)
+		t := mp.AddTable(mdl.Page{})
 		// t.ColMap("domain_name").SetUnique(true)
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
-		t.SetUniqueTogether("community_key", "pdf_url")
+		t.SetUniqueTogether("page_url", "page_number")
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
@@ -89,6 +101,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	dbmap = IndependentDbMapper(db)
 	dbmap.AddTable(mdl.Community{})
 	dbmap.AddTable(mdl.Pdf{})
+	dbmap.AddTable(mdl.Page{})
 
 	return dbmap
 

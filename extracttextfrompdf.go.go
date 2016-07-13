@@ -59,10 +59,14 @@ func processPdf(c *iris.Context) {
 		for i := 0; i < len(pdfs); i++ {
 
 			display += fmt.Sprintf("============================\n")
-			display += fmt.Sprintf("%v\n", pdfs[i].CommunityName)
+			msg1 := fmt.Sprintf("opening pdf <a href='%v' target='pdf'>id%03v</a> for %v \n", pdfs[i].Url, pdfs[i].Id, pdfs[i].CommunityName)
+			display += msg1
+			logx.Printf("opening pdf id%03v for %v \n", pdfs[i].Id, pdfs[i].CommunityName)
 
-			if pdfs[i].Frequency > 2 {
-				display += fmt.Sprintf("skipping due to frequency %v \n\n", pdfs[i].Frequency)
+			if pdfs[i].Frequency > maxFrequency {
+				msg2 := fmt.Sprintf("  skipping due to frequency %v \n\n", pdfs[i].Frequency)
+				display += msg2
+				logx.Printf(msg2)
 				continue
 			}
 
@@ -80,19 +84,11 @@ func processPdf(c *iris.Context) {
 			// ioutil.WriteFile(fmt.Sprintf("pdfNumber%03v.pdf", pdfs[i].Id), respBytes, os.FileMode(777))
 
 			rdr := bytes.NewReader(respBytes)
-
-			msg1 := fmt.Sprintf("opening pdf #%-2v id %002v %v \n", i, pdfs[i].Id, util.UpToR(pdfs[i].Url, 55)) // avoid %v missings
-			msg1 = strings.Replace(msg1, "%v", "%%v", -1)
-			logx.Printf(msg1)
-			display += msg1
-
 			rdr2, err := pdf.NewReader(rdr, int64(len(respBytes)))
 			if err != nil {
 				logx.Printf("%v", err)
 				continue
 			}
-
-			content := bytes.Buffer{}
 
 			numPages := rdr2.NumPage()
 			logx.Printf(" found %v pages\n", numPages)
@@ -101,29 +97,58 @@ func processPdf(c *iris.Context) {
 					logx.Printf("  not opening more than %v pages", maxPages)
 					break
 				}
-				content.WriteString(fmt.Sprintf("\npdf_page_%002v\n", j))
-				// logx.Printf("   opening page %v\n", j)
-				page := rdr2.Page(j)
 
+				// logx.Printf("   opening page %v\n", j)
+
+				page := rdr2.Page(j)
 				cn, err := extractContent(&page)
 				if err != nil {
 					logx.Printf("Page_%002v: %v", j, err)
 					continue
 				}
 				texts := cn.Text
+				cnBf := bytes.Buffer{} // content buffer
 				for k := 0; k < len(texts); k++ {
-					content.WriteString(texts[k].S)
+					cnBf.WriteString(texts[k].S)
 				}
-				content.WriteString(" ")
+
+				p := mdl.Page{}
+				p.Url = pdfs[i].Url
+				p.Number = j
+				p.Content = cnBf.String()
+
+				if false {
+					p.Content = strings.TrimSpace(p.Content)
+					p.Content = strings.Join(strings.Fields(p.Content), " ") // strip all white space
+				}
+				err = gorpx.DBMap().Insert(&p)
+				if err != nil {
+					errStr := fmt.Sprintf("%v", err)
+					if !strings.Contains(errStr, "Error 1062: Duplicate entry") {
+						logx.Printf("insert error %v; trying updated", err)
+					}
+
+					args := map[string]interface{}{
+						"page_url":    p.Url,
+						"page_number": p.Number,
+					}
+
+					primKey, err := gorpx.DBMap().SelectInt("select page_id from "+
+						gorpx.TableName(p)+
+						" where page_url = :page_url AND page_number = :page_number",
+						args)
+
+					util.CheckErr(err)
+					if primKey > 0 {
+						p.Id = int(primKey)
+						numRows, err := gorpx.DBMap().Update(&p)
+						util.CheckErr(err)
+						logx.Printf("     %v rows updated - page id %v", numRows, p.Id)
+					}
+
+				}
+
 			}
-
-			// target := html.EscapeString(string(respBytes))
-
-			addressablePdf := pdfs[i]
-			addressablePdf.Content = content.String()
-			numRows, err := gorpx.DBMap().Update(&addressablePdf)
-			util.CheckErr(err)
-			logx.Printf("%v rows updated", numRows)
 
 		}
 	}
@@ -169,9 +194,12 @@ func processPdf(c *iris.Context) {
 func extractContent(p *pdf.Page) (cnt *pdf.Content, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			// panic: malformed PDF: reading at offset 0: stream not present
-			err = fmt.Errorf("Recovered while reading page content: %v", r)
-			// logx.Printf("in defer: %v", err)
+			rs := fmt.Sprintf("%v", r)
+			if strings.TrimSpace(rs) == "malformed PDF: reading at offset 0: stream not present" {
+				err = fmt.Errorf("extractContent() recover: not stream at offset 0")
+			} else {
+				err = fmt.Errorf("extractContent() recover: %v", r)
+			}
 		}
 	}()
 	cntDeref := p.Content()

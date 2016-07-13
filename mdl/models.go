@@ -14,9 +14,17 @@ type Pdf struct {
 	Url           string `db:"pdf_url, size:600, not null"` // SetUniqueTogether(community_key, pdf_url )
 	Frequency     int    `db:"pdf_frequency, not null"`
 	Title         string `db:"pdf_title, size:200, not null"` // SetUniqueTogether(community_key, pdf_url )
+	ResultRank    int    `db:"pdf_resultrank, not null"`
 	SnippetGoogle string `db:"pdf_snippet_google, size:400, not null"`
-	Content       string `db:"pdf_text, size:100200, not null"`
-	Snippet1      string `db:"pdf_snippet1, size:400, not null"`
-	Snippet2      string `db:"pdf_snippet2, size:400, not null"`
-	Snippet3      string `db:"pdf_snippet3, size:400, not null"`
+	// Content       string `db:"pdf_text, size:100200, not null"`
+	Snippet1 string `db:"pdf_snippet1, size:400, not null"`
+	Snippet2 string `db:"pdf_snippet2, size:400, not null"`
+	Snippet3 string `db:"pdf_snippet3, size:400, not null"`
+}
+
+type Page struct {
+	Id      int    `db:"page_id, primarykey, autoincrement"`
+	Url     string `db:"page_url, size:600, not null"` // SetUniqueTogether(page_url, page_number)
+	Number  int    `db:"page_number, not null"`        // SetUniqueTogether(page_url, page_number)
+	Content string `db:"page_text, size:100200, not null"`
 }

@@ -3,8 +3,10 @@
 	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
 
 	<form action='{{ pref .FormAction }}'>
+		<!-- 
 		<input type="input"  name="Gemeinde"    id="Gemeinde"   value="{{.Gemeinde}}"   >        <br />
 		<input type="input"  name="Schluessel"  id="Schluessel" value="{{.Schluessel}}" >        <br />
+		-->
 		<input type="input"  name="Start"       id="Start"      value="{{.ParamStart}}" >        <br />
 		<input type="input"  name="Count"       id="Count"      value="{{.ParamCount}}" >        <br />
 		<input type="submit" name="submit"      id=""           value=" Submit " accesskey="s" >
@@ -27,7 +29,6 @@
 
 	{{if ne .StructDump "" }}
 		<br/>
-		Struct Dump <br/>
 		<div cols='145' rows='32' style='width: 90%; white-space: pre-line;'>{{ .StructDump }}
 		</div>
 	{{end}}

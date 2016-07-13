@@ -31,7 +31,8 @@ func customSearchService() (*cus.Service, error) {
 	}
 
 	//Get the config from the json key file with the correct scope
-	data, err := ioutil.ReadFile("app_service_account.json")
+	// data, err := ioutil.ReadFile("app_service_account_lib_islands.json")
+	data, err := ioutil.ReadFile("app_service_account_credit-exp.json")
 	if err != nil {
 		fmt.Printf("#1\t%v", err)
 		return nil, err
@@ -106,8 +107,8 @@ func results(c *iris.Context) {
 			search.FileType("pdf")
 			search.Safe("off")
 			start := int64(1)
-			offset := int64(3)
-			maxResults := int64(8)
+			offset := int64(5)
+			maxResults := int64(40)
 
 			search.Start(start)
 			search.Num(offset)
@@ -131,6 +132,7 @@ func results(c *iris.Context) {
 					pdf.CommunityName = communities[i].Name
 					pdf.Url = r.Link
 					pdf.Title = r.Title
+					pdf.ResultRank = int(start) + index
 					pdf.SnippetGoogle = r.Snippet
 					err = gorpx.DBMap().Insert(&pdf)
 					if err != nil {
@@ -197,8 +199,8 @@ func results(c *iris.Context) {
 		StructDump template.HTML
 		RespBytes  template.HTML
 	}{
-		HTMLTitle: AppName() + " top sites",
-		Title:     AppName() + " top sites",
+		HTMLTitle: AppName() + " search for pdf docs on each community",
+		Title:     AppName() + " search for pdf docs on each community",
 		Links:     links,
 
 		StructDump: template.HTML(display),

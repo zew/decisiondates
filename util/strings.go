@@ -20,6 +20,14 @@ func UpToR(s string, numChars int) string {
 	return s
 }
 
+func Ellipsoider(s string, maxChars int) string {
+	if len(s) > maxChars {
+		maxChars -= 6
+		return s[:maxChars/2] + " ... " + s[len(s)-maxChars/2:]
+	}
+	return s
+}
+
 func IndentedDump(v interface{}) string {
 
 	firstColLeftMostPrefix := " "
