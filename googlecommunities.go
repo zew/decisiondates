@@ -32,7 +32,7 @@ func customSearchService() (*cus.Service, error) {
 
 	//Get the config from the json key file with the correct scope
 	// data, err := ioutil.ReadFile("app_service_account_lib_islands.json")
-	data, err := ioutil.ReadFile("app_service_account_credit-exp.json")
+	data, err := ioutil.ReadFile(config.Config.CredentialFileName)
 	if err != nil {
 		fmt.Printf("#1\t%v", err)
 		return nil, err
@@ -107,8 +107,8 @@ func results(c *iris.Context) {
 			search.FileType("pdf")
 			search.Safe("off")
 			start := int64(1)
-			offset := int64(5)
-			maxResults := int64(40)
+			offset := int64(10)     // max allowed is 10
+			maxResults := int64(30) // consuming up to three requests; sometimes only 4 results exist
 
 			search.Start(start)
 			search.Num(offset)
@@ -141,7 +141,7 @@ func results(c *iris.Context) {
 				}
 				start = start + offset
 				// No more search results?
-				if call.SearchInformation.TotalResults < start {
+				if start > call.SearchInformation.TotalResults {
 					break
 				}
 			}
@@ -172,7 +172,7 @@ func results(c *iris.Context) {
 		sql := `
 			/* remove pdf_text and snippets for noisy pdfs */
 			UPDATE pdf
-			SET pdf_text = '', pdf_snippet1= '', pdf_snippet2= '', pdf_snippet3= ''
+			SET pdf_snippet1= '', pdf_snippet2= '', pdf_snippet3= ''
 			WHERE pdf_frequency > 2
       `
 		args := map[string]interface{}{}

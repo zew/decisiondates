@@ -32,12 +32,6 @@ var links = []struct{ Title, Url string }{
 	{"Search in PDF Text", PathProcessText},
 }
 
-var linksOld = map[string]string{
-	"Search Results per Community": PathCommunityResults,
-	"Extract Text from PDF Files":  PathProcessPdfs,
-	"Search in PDF Text":           PathProcessText,
-}
-
 // The url path prefix
 func Pref(p ...string) string {
 	s := appcfg.Config.AppName

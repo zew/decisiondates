@@ -19,7 +19,7 @@ type SQLHost struct {
 	ConnectionParams map[string]string `json:"connection_params"`
 }
 
-type Config3 struct {
+type ConfigT struct {
 	Email                string             `json:"email"`
 	VersionMajor         int                `json:"version_major"`
 	VersionMinor         int                `json:"version_minor"`
@@ -28,9 +28,10 @@ type Config3 struct {
 	AppEngineServerKey   string             `json:"appengine_server_key"`    // "Server key 1" from an app engine app
 	SQLite               bool               `json:"sql_lite"`
 	SQLHosts             map[string]SQLHost `json:"sql_hosts"`
+	CredentialFileName   string             `json:"credential_file_name"`
 }
 
-var Config Config3
+var Config ConfigT
 
 func init() {
 
@@ -48,14 +49,18 @@ func init() {
 	}
 
 	{
-		// file, err := os.Open(filepath.Join(pwd, "/config/config1.json"))
-		// file, err := os.Open("./config/config3.json")
-		file, err := os.Open(path.Join(path.Dir(srcFile), "config3.json"))
-		util.CheckErr(err)
+		fullP := path.Join(path.Dir(srcFile), "config.json")
+		file, err := os.Open(fullP)
+
+		if err != nil {
+			logx.Printf("could not find %v: %v", fullP, err)
+			file, err = os.Open("config.json")
+			util.CheckErr(err)
+		}
+
 		decoder := json.NewDecoder(file)
 		err = decoder.Decode(&Config)
 		util.CheckErr(err)
-		// logx.Printf("%#v", conf3)
 		logx.Printf("\n%#s", util.IndentedDump(Config))
 	}
 

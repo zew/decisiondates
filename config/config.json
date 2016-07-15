@@ -21,5 +21,11 @@
 				"strict":    "true"
 	 		}
 		}
-	}
+	},
+	"credential_file_name":"app_service_account_dom_clean.json",
+	"credential_file_name_res":"app_service_account_credit-exp.json",
+	"credential_file_name_res":"app_service_account_lib_islands.json",
+	"credential_file_name_res":"app_service_account_dom_clean.json",
+	"credential_file_name_res":"app_service_account_tec_news.json",
+	"last":"key"
 }
