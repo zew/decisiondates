@@ -15,7 +15,7 @@ import (
 )
 
 const showLastXDates = 10
-const maxFrequency = 2
+const maxFrequency = 5
 
 func processText(c *iris.Context) {
 
@@ -26,7 +26,14 @@ func processText(c *iris.Context) {
 	r1, err := regexp.Compile("Hebes([aä]+)tz[e]")
 	util.CheckErr(err)
 
-	r1a, err := regexp.Compile("Gemeinderatsbeschluß|amtliche Bekanntmachung")
+	str := ""
+	str += "Grund- und Gewerbesteuer|Haushaltsplan|Bürgerhaushalt|Reform der Grundsteuer|Nachhaltigkeitssatzung"
+	str += "Haushaltsdokument|Protokoll|Gemeindeanzeiger|Anzeiger|Gemeindeblatt|Mitteilungsblatt|STADTANZEIGER"
+	str += "Haushaltsplan|Hebesätze der Gewerbe- und Grundsteuer|Haushaltrede|Jahresabschluss"
+	str += "Haushaltssanierungsplan"
+	str += "Gemeinderatsbeschluß|amtliche Bekanntmachung|Hebesatzsatzung|Sitzung|Amtsblatt|Haushaltssatzung|Erhöhung der Gewerbesteuer|Haushaltsplan"
+	r1a, err := regexp.Compile(str)
+
 	util.CheckErr(err)
 	_ = r1a
 

@@ -104,7 +104,7 @@ func HttpClient() *http.Client {
 		TLSHandshakeTimeout: 5 * time.Second,
 	}
 	var netClient = &http.Client{
-		Timeout:   time.Second * 10,
+		Timeout:   time.Second * 1110,
 		Transport: netTransport,
 	}
 	return netClient
