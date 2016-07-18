@@ -14,9 +14,6 @@ import (
 	"github.com/zew/assessmentratedate/util"
 )
 
-const showLastXDates = 10
-const maxFrequency = 5
-
 func processText(c *iris.Context) {
 
 	var err error
@@ -195,11 +192,8 @@ func processText(c *iris.Context) {
 }
 
 func formatPos(occurrence []int, fullLen int) string {
-
 	pct := float64(occurrence[0]) / float64(fullLen) * 100
 	return fmt.Sprintf("%02.0f%% ", pct)
-	return fmt.Sprintf("%04.1f%% ", pct)
-
 }
 
 func snippetIt(occurrence []int, haystack string, before int, after int) string {
@@ -243,6 +237,5 @@ func snippetIt(occurrence []int, haystack string, before int, after int) string 
 	}
 
 	return ret.String()
-	return haystack[start:stop]
 
 }

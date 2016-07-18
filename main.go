@@ -26,6 +26,10 @@ const (
 	PathProcessText      = "/process-text"
 )
 
+const maxPages = 300 // for large Pdf files: Ignore pages greater than
+const showLastXDates = 10
+const maxFrequency = 5
+
 var links = []struct{ Title, Url string }{
 	{"Search Results per Community", PathCommunityResults},
 	{"Extract Text from PDF Files", PathProcessPdfs},

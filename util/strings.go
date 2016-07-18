@@ -43,3 +43,11 @@ func IndentedDump(v interface{}) string {
 
 	return string(byts)
 }
+
+func EnsureUtf8(haystack string) string {
+	ret := bytes.Buffer{}
+	for _, codepoint := range haystack {
+		ret.WriteRune(codepoint)
+	}
+	return ret.String()
+}

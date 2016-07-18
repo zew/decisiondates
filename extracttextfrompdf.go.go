@@ -19,8 +19,6 @@ import (
 	"github.com/zew/assessmentratedate/util"
 )
 
-const maxPages = 300
-
 func processPdf(c *iris.Context) {
 
 	var err error
@@ -42,19 +40,21 @@ func processPdf(c *iris.Context) {
 			WHERE 			1=1
 				AND		pdf_id >= :start_id
 				AND		pdf_id <  :end_id
+				AND		pdf_frequency <= :frequency
 			`
 		args := map[string]interface{}{
-			"start_id": start,
-			"end_id":   end,
+			"start_id":  start,
+			"end_id":    end,
+			"frequency": maxFrequency,
 		}
 		gorpx.DBMap().TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
 		_, err = gorpx.DBMap().Select(&pdfs, sql, args)
 		util.CheckErr(err)
 		gorpx.DBMap().TraceOff()
 
-		// for i := 0; i < len(pdfs); i++ {
-		// 	logx.Printf("%-4v  %55v %v", i, util.UpTo(pdfs[i].Url, 70), pdfs[i].Title) // dont print out all fields
-		// }
+		for i := 0; i < len(pdfs); i++ {
+			logx.Printf("%-4v  %-4v  %-4v  %v", i, pdfs[i].Id, pdfs[i].Frequency, pdfs[i].Title) // dont print out all fields
+		}
 
 		for i := 0; i < len(pdfs); i++ {
 
@@ -90,7 +90,20 @@ func processPdf(c *iris.Context) {
 				continue
 			}
 
-			numPages := rdr2.NumPage()
+			numPages, err := func() (numP int, err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						err = fmt.Errorf("calling numpages recover: %v", r)
+					}
+				}()
+				numP = rdr2.NumPage()
+				return
+			}()
+			if err != nil {
+				logx.Printf("%v", err)
+				continue
+			}
+
 			logx.Printf(" found %v pages\n", numPages)
 			for j := 1; j <= numPages; j++ {
 				if j >= maxPages {
@@ -143,7 +156,9 @@ func processPdf(c *iris.Context) {
 						p.Id = int(primKey)
 						numRows, err := gorpx.DBMap().Update(&p)
 						util.CheckErr(err)
-						logx.Printf("     %v rows updated - page id %v", numRows, p.Id)
+						if numRows > 0 {
+							logx.Printf("     %v rows updated - page id %v", numRows, p.Id)
+						}
 					}
 
 				}
@@ -195,6 +210,7 @@ func extractContent(p *pdf.Page) (cnt *pdf.Content, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			rs := fmt.Sprintf("%v", r)
+			rs = util.EnsureUtf8(rs)
 			if strings.TrimSpace(rs) == "malformed PDF: reading at offset 0: stream not present" {
 				err = fmt.Errorf("extractContent() recover: not stream at offset 0")
 			} else {
