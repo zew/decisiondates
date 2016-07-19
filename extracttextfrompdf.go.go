@@ -71,11 +71,15 @@ func processPdf(c *iris.Context) {
 			}
 
 			req, err := http.NewRequest("GET", pdfs[i].Url, nil)
-			strUrl = pdfs[i].Url
 			util.CheckErr(err)
 
+			strUrl = pdfs[i].Url
+
 			resp, err := util.HttpClient().Do(req)
-			util.CheckErr(err)
+			if err != nil {
+				logx.Printf("client.Do(): %v", err)
+				continue
+			}
 			defer resp.Body.Close()
 
 			respBytes, err = ioutil.ReadAll(resp.Body)
@@ -211,8 +215,9 @@ func extractContent(p *pdf.Page) (cnt *pdf.Content, err error) {
 		if r := recover(); r != nil {
 			rs := fmt.Sprintf("%v", r)
 			rs = util.EnsureUtf8(rs)
+			rs = util.Ellipsoider(rs, 200)
 			if strings.TrimSpace(rs) == "malformed PDF: reading at offset 0: stream not present" {
-				err = fmt.Errorf("extractContent() recover: not stream at offset 0")
+				err = fmt.Errorf("extractContent() recover: no stream at offset 0")
 			} else {
 				err = fmt.Errorf("extractContent() recover: %v", r)
 			}

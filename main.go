@@ -2,6 +2,7 @@ package main
 
 import (
 	"html/template"
+	"log"
 	"strings"
 
 	"github.com/kataras/iris"
@@ -27,7 +28,7 @@ const (
 )
 
 const maxPages = 300 // for large Pdf files: Ignore pages greater than
-const showLastXDates = 10
+const showMaxXDates = 4
 const maxFrequency = 5
 
 var links = []struct{ Title, Url string }{
@@ -59,6 +60,8 @@ func AppName(p ...string) string {
 func main() {
 
 	// iris.Templates("./*.html")
+
+	log.SetFlags(log.Lshortfile)
 
 	var renderOptions = config.Template{
 		Directory:  "templates",

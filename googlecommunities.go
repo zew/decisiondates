@@ -67,9 +67,14 @@ func results(c *iris.Context) {
 		//
 		//
 		communities := []mdl.Community{}
+		/*
+			      community_id
+			    , community_key
+				, cleansed as community_name
+
+		*/
 		sql := `SELECT 
-				      community_key
-					, cleansed as community_name
+						*
 			FROM 			` + gorpx.TableName(mdl.Community{}) + ` t1
 			WHERE 			1=1
 				AND		community_id >= :start_id
@@ -81,7 +86,9 @@ func results(c *iris.Context) {
 		}
 		_, err = gorpx.DBMap().Select(&communities, sql, args)
 		util.CheckErr(err)
-		logx.Printf("%+v\n", communities)
+		for i := 0; i < len(communities); i++ {
+			logx.Printf("%-4v  %-5v  %v\n", i, communities[i].Id, communities[i].Name)
+		}
 
 		cseService, err := customSearchService()
 		if err != nil {

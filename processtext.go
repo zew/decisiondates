@@ -9,9 +9,9 @@ import (
 	"github.com/kataras/iris"
 
 	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
 	"github.com/zew/assessmentratedate/util"
+	"github.com/zew/awis/logx"
 )
 
 func processText(c *iris.Context) {
@@ -23,16 +23,14 @@ func processText(c *iris.Context) {
 	r1, err := regexp.Compile("Hebes([aä]+)tz[e]")
 	util.CheckErr(err)
 
-	str := ""
-	str += "Grund- und Gewerbesteuer|Haushaltsplan|Bürgerhaushalt|Reform der Grundsteuer|Nachhaltigkeitssatzung"
-	str += "Haushaltsdokument|Protokoll|Gemeindeanzeiger|Anzeiger|Gemeindeblatt|Mitteilungsblatt|STADTANZEIGER"
-	str += "Haushaltsplan|Hebesätze der Gewerbe- und Grundsteuer|Haushaltrede|Jahresabschluss"
-	str += "Haushaltssanierungsplan"
-	str += "Gemeinderatsbeschluß|amtliche Bekanntmachung|Hebesatzsatzung|Sitzung|Amtsblatt|Haushaltssatzung|Erhöhung der Gewerbesteuer|Haushaltsplan"
-	r1a, err := regexp.Compile(str)
-
+	str1 := "amtliche Bekanntmachung|Amtsblatt|Anzeiger|Bürgerhaushalt"
+	str2 := "Gewerbesteuer|Gemeindeanzeiger|Gemeindeblatt|Gemeinderatsbeschluß|Grundsteuer"
+	str3 := "Haushaltrede|Haushaltsdokument|Haushaltsplan|Haushaltssanierungsplan|Haushaltssatzung|Hebesatzsatzung"
+	str4 := "Jahresabschluss|Jahresabschluß|Mitteilungsblatt|Nachhaltigkeitssatzung"
+	str5 := "Protokoll|Sitzung|Stadtanzeiger"
+	all2 := fmt.Sprintf("(?i)%v|%v|%v|%v|%v", str1, str2, str3, str4, str5)
+	r2, err := regexp.Compile(all2)
 	util.CheckErr(err)
-	_ = r1a
 
 	//
 	// original regex: ("[0-9]{2}[./ ]+[0-9]{2}[./ ]+[0-9]{4}")
@@ -40,9 +38,9 @@ func processText(c *iris.Context) {
 	monthsLong := "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
 	monthsShort := "Jan|Feb|Mrz|Apr|Mai|Jun|Jul|Aug|Sept|Sep|Okt|Nov|Dez"
 	monthsNumbered := "1|2|3|4|5|6|7|8|9|01|02|03|04|05|06|07|08|09|10|11|12"
-	yearsLong := "2012|2013|2014|2015|2016"
-	all := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", weekdays, monthsLong, monthsShort, monthsNumbered, yearsLong)
-	r2, err := regexp.Compile(all)
+	yearsLong := "2010|2011|2012|2013|2014|2015|2016"
+	all3 := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", weekdays, monthsLong, monthsShort, monthsNumbered, yearsLong)
+	r3, err := regexp.Compile(all3)
 	util.CheckErr(err)
 
 	//
@@ -60,11 +58,13 @@ func processText(c *iris.Context) {
 			WHERE 			1=1
 				AND		pdf_id >= :start_id
 				AND		pdf_id <  :end_id
+				AND		pdf_frequency <= :frequency
 
 			`
 		args := map[string]interface{}{
-			"start_id": start,
-			"end_id":   end,
+			"start_id":  start,
+			"end_id":    end,
+			"frequency": maxFrequency,
 		}
 		_, err = gorpx.DBMap().Select(&pdfs, sql, args)
 		util.CheckErr(err)
@@ -81,6 +81,9 @@ func processText(c *iris.Context) {
 				continue
 			}
 
+			var fndPdf1, fndPdf2, fndPdf3 bool
+			var pdfDisp string
+
 			pages := []mdl.Page{}
 			sql := `SELECT 	*
 			FROM 			` + gorpx.TableName(mdl.Page{}) + ` t1
@@ -92,62 +95,93 @@ func processText(c *iris.Context) {
 			_, err = gorpx.DBMap().Select(&pages, sql, args)
 			util.CheckErr(err)
 
-			var foundAllPdf bool
+			addressablePdf.Snippet1 = ""
+			addressablePdf.Snippet2 = ""
+			addressablePdf.Snippet3 = ""
+
 			for j := 0; j < len(pages); j++ {
 
 				p := pages[j]
-
-				var found1, found2 bool
+				var fndOnPage1, fndOnPage2, fndOnPage3 bool
 
 				// search for the hebesatz
+				var sn1p string
 				{
 					matchPos := r1.FindAllStringIndex(p.Content, -1)
 					addressablePdf.Snippet1 = fmt.Sprintf("%v", matchPos)
-					addressablePdf.Snippet2 = ""
-					for idx, occurrence := range matchPos {
-						found1 = true
-						sn := snippetIt(occurrence, p.Content, 20, 110)
-						addressablePdf.Snippet2 += fmt.Sprintf("#%03v: %02v%%  %v  \n\n", idx, 100*occurrence[0]/len(p.Content), sn)
+					if len(matchPos) > 2 {
+						matchPos = append(matchPos[:1], matchPos[len(matchPos)-1:]...)
 					}
+					for idx, occurrence := range matchPos {
+						fndOnPage1 = true
+						fndPdf1 = true
+						sn := snippetIt(occurrence, p.Content, 20, 110)
+						sn1p += fmt.Sprintf("#%03v: %02v%%  %v  \n\n", idx, 100*occurrence[0]/len(p.Content), sn)
+					}
+					addressablePdf.Snippet2 += sn1p
+				}
+
+				// search for "amtliche Mitteilung, etc"
+				var sn2p string
+				{
+					matchPos := r2.FindAllStringIndex(p.Content, -1)
+					if len(matchPos) > 2 {
+						matchPos = append(matchPos[:1], matchPos[len(matchPos)-1:]...)
+					}
+					for idx, occurrence := range matchPos {
+						// fndOnPage2 = true
+						fndPdf2 = true
+						sn := snippetIt(occurrence, p.Content, 20, 110)
+						_ = idx
+						_ = sn
+						// sn2p += fmt.Sprintf("#%03v: %02v%%  %v  \n\n", idx, 100*occurrence[0]/len(p.Content), sn)
+					}
+					addressablePdf.Snippet2 += sn2p
 				}
 
 				// search for the date
+				var sn3p string
 				{
-					matchPosAll := r2.FindAllStringSubmatchIndex(p.Content, -1)
-					addressablePdf.Snippet3 = ""
-					if len(matchPosAll) > showLastXDates {
-						matchPosAll = append(matchPosAll[:showLastXDates/2], matchPosAll[len(matchPosAll)-showLastXDates/2:]...)
+					matchPosAll := r3.FindAllStringSubmatchIndex(p.Content, -1)
+					if len(matchPosAll) > showMaxXDates {
+						matchPosAll = append(matchPosAll[:showMaxXDates/2], matchPosAll[len(matchPosAll)-showMaxXDates/2:]...)
 					}
 					for idx, occurrence := range matchPosAll {
-						found2 = true
-						sn := snippetIt(occurrence[2:4], p.Content, 12, 40)
-						addressablePdf.Snippet3 += fmt.Sprintf("#%03v: %v  %v  \n\n", idx, formatPos(occurrence, len(p.Content)), sn)
-
+						fndOnPage3 = true
+						fndPdf3 = true
+						sn := snippetIt(occurrence[2:4], p.Content, 12, 40) // the second sub-match
+						sn3p += fmt.Sprintf("#%03v: %v  %v    \n\n", idx, formatPos(occurrence, len(p.Content)), sn)
 					}
+					addressablePdf.Snippet3 += sn3p
 				}
 
-				if found1 || found2 {
-					foundAllPdf = true
-					display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>%v: %v - Seite %02v</a>\n",
-						addressablePdf.Url, p.Number, addressablePdf.CommunityName, addressablePdf.Title, p.Number)
-
-					display += util.Ellipsoider(addressablePdf.Snippet2, 800)
-					display += addressablePdf.Snippet3
-					display += "\n"
+				if fndOnPage1 || fndOnPage2 || fndOnPage3 {
+					pdfDisp += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n",
+						addressablePdf.Url, p.Number, p.Number)
+					pdfDisp += util.Ellipsoider(sn1p, 1800)
+					pdfDisp += util.Ellipsoider(sn2p, 1800)
+					pdfDisp += util.Ellipsoider(sn3p, 1800)
+					pdfDisp += "\n"
 				}
 
-				//
-				//
-				numRows, err := gorpx.DBMap().Update(&addressablePdf)
-				if err != nil {
-					display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &addressablePdf.Snippet2, &addressablePdf.Snippet3)
-				}
-				// util.CheckErr(err)
-				logx.Printf("%v rows updated", numRows)
 			}
 
-			if foundAllPdf {
-				display += "<hr/>\n\n"
+			//
+			//
+			numRows, err := gorpx.DBMap().Update(&addressablePdf)
+			if err != nil {
+				display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &addressablePdf.Snippet2, &addressablePdf.Snippet3)
+				continue
+			}
+			if numRows > 0 {
+				logx.Printf("%v rows updated; pdf_id %-5v", numRows, addressablePdf.Id)
+
+			}
+
+			if fndPdf1 && fndPdf2 && fndPdf3 {
+				display += fmt.Sprintf("<a href='%v' target='pdf'>%v: %v</a>\n",
+					addressablePdf.Url, addressablePdf.CommunityName, addressablePdf.Title)
+				display += pdfDisp + "<hr/>\n\n"
 			}
 
 		}
@@ -235,6 +269,7 @@ func snippetIt(occurrence []int, haystack string, before int, after int) string 
 			break
 		}
 	}
+	ret.WriteString("</b> ")
 
 	return ret.String()
 
