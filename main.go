@@ -10,7 +10,7 @@ import (
 
 	appcfg "github.com/zew/assessmentratedate/config"
 	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/logx"
+	"github.com/zew/logx"
 )
 
 var funcMapAll = map[string]interface{}{

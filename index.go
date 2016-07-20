@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/kataras/iris"
-	"github.com/zew/assessmentratedate/util"
+	"github.com/zew/util"
 )
 
 func index(c *iris.Context) {

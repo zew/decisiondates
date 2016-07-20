@@ -9,9 +9,9 @@ import (
 	"github.com/kataras/iris"
 	"github.com/zew/assessmentratedate/config"
 	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
-	"github.com/zew/assessmentratedate/util"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 )
 
 // Here we get the plain JSON response.

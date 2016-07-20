@@ -9,9 +9,9 @@ import (
 	"github.com/kataras/iris"
 
 	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
-	"github.com/zew/assessmentratedate/util"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 )
 
 func refineTextMultiPass(c *iris.Context) {
@@ -105,7 +105,7 @@ func refineTextMultiPass(c *iris.Context) {
 
 				{
 					matchPos := rs[0].FindAllStringIndex(p.Content, -1)
-					pdf.Snippet1 = fmt.Sprintf("%v", matchPos)
+					// pdf.Snippet1 = fmt.Sprintf("%v", matchPos)
 					for _, occurrence := range matchPos {
 						h := Hit{}
 						h.PageNum = p.Number
@@ -118,13 +118,13 @@ func refineTextMultiPass(c *iris.Context) {
 					}
 				}
 
-				if hits.HasRegExHitsAtPage(p.Number, 0) {
+				if hits.HasRegExesHitsAtPage(p.Number, []int{0}) {
 					matchPos := rs[1].FindAllStringIndex(p.Content, -1)
 					for _, occurrence := range matchPos {
 						pos := occurrence[0]
-						hits0 := hits.RegExHits(0)
-						for _, hitRelated := range hits0[p.Number] {
-							distance := pos - hitRelated.Start
+						all0Hits := hits.RegExHits(0)
+						for _, curPage0Hit := range all0Hits[p.Number] {
+							distance := pos - curPage0Hit.Start
 							if distance < 200 && distance > -20 {
 								h := Hit{}
 								h.PageNum = p.Number
@@ -141,18 +141,6 @@ func refineTextMultiPass(c *iris.Context) {
 
 			}
 
-			//
-			//
-			numRows, err := gorpx.DBMap().Update(&pdf)
-			if err != nil {
-				display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &pdf.Snippet2, &pdf.Snippet3)
-				continue
-			}
-			if numRows > 0 {
-				logx.Printf("%v rows updated; pdf_id %-5v", numRows, pdf.Id)
-
-			}
-
 			if hits.HasRegExesHitsAtAnyOnePage([]int{0, 1}) {
 				display += fmt.Sprintf("<a href='%v' target='pdf'>%v: %v</a>\n",
 					pdf.Url, pdf.CommunityName, pdf.Title)
@@ -162,14 +150,32 @@ func refineTextMultiPass(c *iris.Context) {
 					if hits.HasRegExesHitsAtPage(p.Number, []int{0, 1}) {
 						display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n",
 							pdf.Url, p.Number, p.Number)
-						hitsByPct := hits.HitsPerPageByPct(p.Number)
+						hitsByPct := hits.HitsPerPageSortedByPct(p.Number)
+						lastTypes := []int{}
 						for _, hitByPct := range hitsByPct {
-							display += util.Ellipsoider(hitByPct.String(), 1800)
+							if !Repetitive(lastTypes, hitByPct.RegExId) {
+								display += util.Ellipsoider(hitByPct.String(), 1800)
+							} else {
+								// display += "... \n"
+							}
+							lastTypes = append(lastTypes, hitByPct.RegExId)
+							pdf.Snippet2 += util.Ellipsoider(hitByPct.String(), 1800)
 						}
 						display += "\n"
 					}
 				}
 				display += "<hr/>\n\n"
+			}
+
+			//
+			//
+			numRows, err := gorpx.DBMap().Update(&pdf)
+			if err != nil {
+				display += fmt.Sprintf("Error during update: %v \n%v", err, &pdf.Snippet2)
+				continue
+			}
+			if numRows > 0 {
+				logx.Printf("%v rows updated; pdf_id %-5v", numRows, pdf.Id)
 			}
 
 		}
@@ -252,4 +258,19 @@ func snippetIt(occurrence []int, haystack string, before int, after int) string 
 
 	return ret.String()
 
+}
+
+func Repetitive(RegExIds []int, RegExId int) bool {
+	cnt := 0
+	for i := len(RegExIds) - 1; i > -1; i-- {
+		if RegExIds[i] == RegExId {
+			cnt++
+			if cnt > 2 {
+				return true
+			}
+		} else {
+			return false
+		}
+	}
+	return false
 }

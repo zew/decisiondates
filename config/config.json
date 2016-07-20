@@ -10,8 +10,8 @@
 	{ 
 		"dev":{
 	 		"user":    "pbberlin",
-	 		"host_remote":    "10.8.1.215",
 	 		"host":    "127.0.0.1",
+	 		"host_remote":    "10.8.1.215",
 	 		"port":    "3306",
 	 		"db_name": "assessment_rate_date",
 	 		"connection_params":{
@@ -23,7 +23,7 @@
 	 		}
 		}
 	},
-	"credential_file_name":    "app_service_account_01_credit_exp.json",
+	"credential_file_name":    "app_service_account_04_tec_news.json",
 	"credential_file_name_res":"app_service_account_01_credit_exp.json",
 	"credential_file_name_res":"app_service_account_02_dom_clean.json",
 	"credential_file_name_res":"app_service_account_03_lib_islands.json",

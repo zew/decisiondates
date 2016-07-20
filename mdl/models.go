@@ -25,7 +25,7 @@ type Pdf struct {
 
 type Page struct {
 	Id      int    `db:"page_id, primarykey, autoincrement"`
-	Url     string `db:"page_url, size:600, not null"` // SetUniqueTogether(page_url, page_number)
-	Number  int    `db:"page_number, not null"`        // SetUniqueTogether(page_url, page_number)
-	Content string `db:"page_text, size:100200, not null"`
+	Url     string `db:"page_url, size:600, not null"`     // SetUniqueTogether(page_url, page_number)
+	Number  int    `db:"page_number, not null"`            // SetUniqueTogether(page_url, page_number)
+	Content string `db:"page_text, size:131072, not null"` // text (64k) does not suffice; make it mediumtext.
 }

@@ -14,9 +14,9 @@ import (
 	"github.com/pbberlin/pdf"
 
 	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
-	"github.com/zew/assessmentratedate/util"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 )
 
 func processPdf(c *iris.Context) {
@@ -170,6 +170,8 @@ func processPdf(c *iris.Context) {
 			}
 
 		}
+		logx.Printf("---------text extraction finished for--%v-%v-----", start, end)
+
 	}
 
 	s := struct {
@@ -178,8 +180,6 @@ func processPdf(c *iris.Context) {
 		Links     []struct{ Title, Url string }
 
 		FormAction string
-		Gemeinde   string
-		Schluessel string
 		ParamStart string
 		ParamCount string
 
@@ -199,8 +199,6 @@ func processPdf(c *iris.Context) {
 		Url:        strUrl,
 		FormAction: PathProcessPdfs,
 
-		Gemeinde:   util.EffectiveParam(c, "Gemeinde", "Schwetzingen"),
-		Schluessel: util.EffectiveParam(c, "Schluessel", "08 2 26 084"),
 		ParamStart: util.EffectiveParam(c, "Start", "0"),
 		ParamCount: util.EffectiveParam(c, "Count", "3"),
 	}
@@ -215,9 +213,12 @@ func extractContent(p *pdf.Page) (cnt *pdf.Content, err error) {
 		if r := recover(); r != nil {
 			rs := fmt.Sprintf("%v", r)
 			rs = util.EnsureUtf8(rs)
+			rs = strings.TrimSpace(rs)
 			rs = util.Ellipsoider(rs, 200)
-			if strings.TrimSpace(rs) == "malformed PDF: reading at offset 0: stream not present" {
+			if rs == "malformed PDF: reading at offset 0: stream not present" {
 				err = fmt.Errorf("extractContent() recover: no stream at offset 0")
+			} else if strings.HasPrefix(rs, "malformed hex string") {
+				err = fmt.Errorf("extractContent() recover: malformed hex string")
 			} else {
 				err = fmt.Errorf("extractContent() recover: %v", r)
 			}

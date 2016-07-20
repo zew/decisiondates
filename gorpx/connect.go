@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/go-gorp/gorp"
 	"github.com/zew/assessmentratedate/config"
-	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
-	"github.com/zew/assessmentratedate/util"
+	"github.com/zew/gorp"
+	"github.com/zew/logx"
+	"github.com/zew/util"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
