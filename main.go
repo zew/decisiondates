@@ -24,7 +24,7 @@ var irisConfig = config.Iris{}
 const (
 	PathCommunityResults = "/community-search-results"
 	PathProcessPdfs      = "/process-pdfs"
-	PathProcessText      = "/process-text"
+	RefineTextMultiPass  = "/refine-text-multi-pass"
 )
 
 const maxPages = 300 // for large Pdf files: Ignore pages greater than
@@ -34,7 +34,7 @@ const maxFrequency = 5
 var links = []struct{ Title, Url string }{
 	{"Search Results per Community", PathCommunityResults},
 	{"Extract Text from PDF Files", PathProcessPdfs},
-	{"Search in PDF Text", PathProcessText},
+	{"Refine Text Multipass", RefineTextMultiPass},
 }
 
 // The url path prefix
@@ -89,7 +89,9 @@ func main() {
 
 	i01.Get(Pref(PathCommunityResults), results)
 	i01.Get(Pref(PathProcessPdfs), processPdf)
-	i01.Get(Pref(PathProcessText), processText)
+	// i01.Get(Pref(PathProcessText), processText)
+	// i01.Get(Pref(RefineText), refineText)
+	i01.Get(Pref(RefineTextMultiPass), refineTextMultiPass)
 
 	logx.Printf("setting up sql server...")
 	gorpx.DBMap()

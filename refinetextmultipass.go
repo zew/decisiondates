@@ -9,19 +9,27 @@ import (
 	"github.com/kataras/iris"
 
 	"github.com/zew/assessmentratedate/gorpx"
+	"github.com/zew/assessmentratedate/logx"
 	"github.com/zew/assessmentratedate/mdl"
 	"github.com/zew/assessmentratedate/util"
-	"github.com/zew/awis/logx"
 )
 
-func processText(c *iris.Context) {
+func refineTextMultiPass(c *iris.Context) {
 
 	var err error
 	display := ""
 	strUrl := ""
 
-	r1, err := regexp.Compile("Hebes([aä]+)tz[e]")
+	rs := []*regexp.Regexp{}
+
+	r0, err := regexp.Compile("Hebes[aä]{1}tz[e]{0,1}")
 	util.CheckErr(err)
+	rs = append(rs, r0)
+
+	// [\n\s]+  would be new line or space
+	r1, err := regexp.Compile(`[^0-9]{1}[1-5]{1}[0-9]{1}[05]{1}[^0-9]{1}`)
+	util.CheckErr(err)
+	rs = append(rs, r1)
 
 	str1 := "amtliche Bekanntmachung|Amtsblatt|Anzeiger|Bürgerhaushalt"
 	str2 := "Gewerbesteuer|Gemeindeanzeiger|Gemeindeblatt|Gemeinderatsbeschluß|Grundsteuer"
@@ -29,8 +37,9 @@ func processText(c *iris.Context) {
 	str4 := "Jahresabschluss|Jahresabschluß|Mitteilungsblatt|Nachhaltigkeitssatzung"
 	str5 := "Protokoll|Sitzung|Stadtanzeiger"
 	all2 := fmt.Sprintf("(?i)%v|%v|%v|%v|%v", str1, str2, str3, str4, str5)
-	r2, err := regexp.Compile(all2)
+	r3, err := regexp.Compile(all2)
 	util.CheckErr(err)
+	rs = append(rs, r3)
 
 	//
 	// original regex: ("[0-9]{2}[./ ]+[0-9]{2}[./ ]+[0-9]{4}")
@@ -40,8 +49,9 @@ func processText(c *iris.Context) {
 	monthsNumbered := "1|2|3|4|5|6|7|8|9|01|02|03|04|05|06|07|08|09|10|11|12"
 	yearsLong := "2010|2011|2012|2013|2014|2015|2016"
 	all3 := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", weekdays, monthsLong, monthsShort, monthsNumbered, yearsLong)
-	r3, err := regexp.Compile(all3)
+	r4, err := regexp.Compile(all3)
 	util.CheckErr(err)
+	rs = append(rs, r4)
 
 	//
 	if util.EffectiveParam(c, "submit", "none") != "none" {
@@ -71,18 +81,8 @@ func processText(c *iris.Context) {
 
 		for i := 0; i < len(pdfs); i++ {
 
-			// r1.MatchString("peach")
-			addressablePdf := pdfs[i]
-
-			if addressablePdf.Frequency > maxFrequency {
-				// display += fmt.Sprintf(
-				// 	"Skipping <a href='%v' target='pdf' >%v: %v</a> &nbsp; due to frequency %v \n ",
-				// 	addressablePdf.Url, addressablePdf.CommunityName, addressablePdf.Title, addressablePdf.Frequency)
-				continue
-			}
-
-			var fndPdf1, fndPdf2, fndPdf3 bool
-			var pdfDisp string
+			pdf := pdfs[i]
+			hits := Hits{}
 
 			pages := []mdl.Page{}
 			sql := `SELECT 	*
@@ -90,98 +90,86 @@ func processText(c *iris.Context) {
 			WHERE 			1=1
 				AND		page_url = :page_url   `
 			args := map[string]interface{}{
-				"page_url": addressablePdf.Url,
+				"page_url": pdf.Url,
 			}
 			_, err = gorpx.DBMap().Select(&pages, sql, args)
 			util.CheckErr(err)
 
-			addressablePdf.Snippet1 = ""
-			addressablePdf.Snippet2 = ""
-			addressablePdf.Snippet3 = ""
+			pdf.Snippet1 = ""
+			pdf.Snippet2 = ""
+			pdf.Snippet3 = ""
 
 			for j := 0; j < len(pages); j++ {
 
 				p := pages[j]
-				var fndOnPage1, fndOnPage2, fndOnPage3 bool
 
-				// search for the hebesatz
-				var sn1p string
 				{
-					matchPos := r1.FindAllStringIndex(p.Content, -1)
-					addressablePdf.Snippet1 = fmt.Sprintf("%v", matchPos)
-					if len(matchPos) > 2 {
-						matchPos = append(matchPos[:1], matchPos[len(matchPos)-1:]...)
+					matchPos := rs[0].FindAllStringIndex(p.Content, -1)
+					pdf.Snippet1 = fmt.Sprintf("%v", matchPos)
+					for _, occurrence := range matchPos {
+						h := Hit{}
+						h.PageNum = p.Number
+						h.RegExId = 0
+						h.Start = occurrence[0]
+						h.Stop = occurrence[1]
+						h.Pct = 100 * occurrence[0] / len(p.Content)
+						h.PageExtract = snippetIt(occurrence, p.Content, 20, 110)
+						hits[p.Number] = append(hits[p.Number], h)
 					}
-					for idx, occurrence := range matchPos {
-						fndOnPage1 = true
-						fndPdf1 = true
-						sn := snippetIt(occurrence, p.Content, 20, 110)
-						sn1p += fmt.Sprintf("#%03v: %02v%%  %v  \n\n", idx, 100*occurrence[0]/len(p.Content), sn)
-					}
-					addressablePdf.Snippet2 += sn1p
 				}
 
-				// search for "amtliche Mitteilung, etc"
-				var sn2p string
-				{
-					matchPos := r2.FindAllStringIndex(p.Content, -1)
-					if len(matchPos) > 2 {
-						matchPos = append(matchPos[:1], matchPos[len(matchPos)-1:]...)
+				if hits.HasRegExHitsAtPage(p.Number, 0) {
+					matchPos := rs[1].FindAllStringIndex(p.Content, -1)
+					for _, occurrence := range matchPos {
+						pos := occurrence[0]
+						hits0 := hits.RegExHits(0)
+						for _, hitRelated := range hits0[p.Number] {
+							distance := pos - hitRelated.Start
+							if distance < 200 && distance > -20 {
+								h := Hit{}
+								h.PageNum = p.Number
+								h.RegExId = 1
+								h.Start = occurrence[0]
+								h.Stop = occurrence[1]
+								h.Pct = 100 * occurrence[0] / len(p.Content)
+								h.PageExtract = snippetIt(occurrence, p.Content, 20, 110)
+								hits[p.Number] = append(hits[p.Number], h)
+							}
+						}
 					}
-					for idx, occurrence := range matchPos {
-						// fndOnPage2 = true
-						fndPdf2 = true
-						sn := snippetIt(occurrence, p.Content, 20, 110)
-						_ = idx
-						_ = sn
-						// sn2p += fmt.Sprintf("#%03v: %02v%%  %v  \n\n", idx, 100*occurrence[0]/len(p.Content), sn)
-					}
-					addressablePdf.Snippet2 += sn2p
-				}
-
-				// search for the date
-				var sn3p string
-				{
-					matchPosAll := r3.FindAllStringSubmatchIndex(p.Content, -1)
-					if len(matchPosAll) > showMaxXDates {
-						matchPosAll = append(matchPosAll[:showMaxXDates/2], matchPosAll[len(matchPosAll)-showMaxXDates/2:]...)
-					}
-					for idx, occurrence := range matchPosAll {
-						fndOnPage3 = true
-						fndPdf3 = true
-						sn := snippetIt(occurrence[2:4], p.Content, 12, 40) // the second sub-match
-						sn3p += fmt.Sprintf("#%03v: %v  %v    \n\n", idx, formatPos(occurrence, len(p.Content)), sn)
-					}
-					addressablePdf.Snippet3 += sn3p
-				}
-
-				if fndOnPage1 || fndOnPage2 || fndOnPage3 {
-					pdfDisp += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n",
-						addressablePdf.Url, p.Number, p.Number)
-					pdfDisp += util.Ellipsoider(sn1p, 1800)
-					pdfDisp += util.Ellipsoider(sn2p, 1800)
-					pdfDisp += util.Ellipsoider(sn3p, 1800)
-					pdfDisp += "\n"
 				}
 
 			}
 
 			//
 			//
-			numRows, err := gorpx.DBMap().Update(&addressablePdf)
+			numRows, err := gorpx.DBMap().Update(&pdf)
 			if err != nil {
-				display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &addressablePdf.Snippet2, &addressablePdf.Snippet3)
+				display += fmt.Sprintf("Error during update: %v \n%v\n%v", err, &pdf.Snippet2, &pdf.Snippet3)
 				continue
 			}
 			if numRows > 0 {
-				logx.Printf("%v rows updated; pdf_id %-5v", numRows, addressablePdf.Id)
+				logx.Printf("%v rows updated; pdf_id %-5v", numRows, pdf.Id)
 
 			}
 
-			if fndPdf1 && fndPdf2 && fndPdf3 {
+			if hits.HasRegExesHitsAtAnyOnePage([]int{0, 1}) {
 				display += fmt.Sprintf("<a href='%v' target='pdf'>%v: %v</a>\n",
-					addressablePdf.Url, addressablePdf.CommunityName, addressablePdf.Title)
-				display += pdfDisp + "<hr/>\n\n"
+					pdf.Url, pdf.CommunityName, pdf.Title)
+
+				for j := 0; j < len(pages); j++ {
+					p := pages[j]
+					if hits.HasRegExesHitsAtPage(p.Number, []int{0, 1}) {
+						display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n",
+							pdf.Url, p.Number, p.Number)
+						hitsByPct := hits.HitsPerPageByPct(p.Number)
+						for _, hitByPct := range hitsByPct {
+							display += util.Ellipsoider(hitByPct.String(), 1800)
+						}
+						display += "\n"
+					}
+				}
+				display += "<hr/>\n\n"
 			}
 
 		}
@@ -193,8 +181,6 @@ func processText(c *iris.Context) {
 		Links     []struct{ Title, Url string }
 
 		FormAction string
-		Gemeinde   string
-		Schluessel string
 		ParamStart string
 		ParamCount string
 
@@ -204,18 +190,16 @@ func processText(c *iris.Context) {
 		StructDump template.HTML
 		RespBytes  template.HTML
 	}{
-		HTMLTitle: AppName() + " find text passages",
-		Title:     AppName() + " find text passages",
+		HTMLTitle: AppName() + " refine possible matches",
+		Title:     AppName() + " refine possible matches",
 		Links:     links,
 
 		StructDump: template.HTML(display),
 		// RespBytes:  template.HTML(string(respBytes)),
 
 		Url:        strUrl,
-		FormAction: PathProcessText,
+		FormAction: RefineTextMultiPass,
 
-		Gemeinde:   util.EffectiveParam(c, "Gemeinde", "Schwetzingen"),
-		Schluessel: util.EffectiveParam(c, "Schluessel", "08 2 26 084"),
 		ParamStart: util.EffectiveParam(c, "Start", "0"),
 		ParamCount: util.EffectiveParam(c, "Count", "3"),
 	}
@@ -223,11 +207,6 @@ func processText(c *iris.Context) {
 	err = c.Render("results.html", s)
 	util.CheckErr(err)
 
-}
-
-func formatPos(occurrence []int, fullLen int) string {
-	pct := float64(occurrence[0]) / float64(fullLen) * 100
-	return fmt.Sprintf("%02.0f%% ", pct)
 }
 
 func snippetIt(occurrence []int, haystack string, before int, after int) string {
