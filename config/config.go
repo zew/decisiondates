@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -28,10 +27,22 @@ type ConfigT struct {
 	AppEngineServerKey   string             `json:"appengine_server_key"`    // "Server key 1" from an app engine app
 	SQLite               bool               `json:"sql_lite"`
 	SQLHosts             map[string]SQLHost `json:"sql_hosts"`
-	CredentialFileName   string             `json:"credential_file_name"`
+	CredentialFileNames  []string           `json:"credential_file_names"`
 }
 
 var Config ConfigT
+
+var credentialFileIdx = 0
+
+func CredentialFileName(revolve bool) string {
+	if revolve {
+		credentialFileIdx++
+		if credentialFileIdx > len(Config.CredentialFileNames)-1 {
+			credentialFileIdx = 0
+		}
+	}
+	return Config.CredentialFileNames[credentialFileIdx]
+}
 
 func init() {
 
@@ -39,9 +50,9 @@ func init() {
 		util.EnvVar(v)
 	}
 
-	pwd, err := os.Getwd()
+	workDir, err := os.Getwd()
 	util.CheckErr(err)
-	fmt.Println("pwd2: ", pwd)
+	logx.Println("workDir: ", workDir)
 
 	_, srcFile, _, ok := runtime.Caller(1)
 	if !ok {
@@ -51,7 +62,6 @@ func init() {
 	{
 		fullP := path.Join(path.Dir(srcFile), "config.json")
 		file, err := os.Open(fullP)
-
 		if err != nil {
 			logx.Printf("could not find %v: %v", fullP, err)
 			file, err = os.Open("config.json")

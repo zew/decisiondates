@@ -83,7 +83,10 @@ func processPdf(c *iris.Context) {
 			defer resp.Body.Close()
 
 			respBytes, err = ioutil.ReadAll(resp.Body)
-			util.CheckErr(err)
+			if err != nil {
+				logx.Printf("error reading response body: %v", err)
+				continue
+			}
 
 			// ioutil.WriteFile(fmt.Sprintf("pdfNumber%03v.pdf", pdfs[i].Id), respBytes, os.FileMode(777))
 

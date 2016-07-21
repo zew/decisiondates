@@ -23,10 +23,13 @@
 	 		}
 		}
 	},
+	"credential_file_names":
+	[
+		"app_service_account_01_credit_exp.json",
+		"app_service_account_02_dom_clean.json",
+		"app_service_account_03_lib_islands.json",
+		"app_service_account_04_tec_news.json"
+	],
 	"credential_file_name":    "app_service_account_04_tec_news.json",
-	"credential_file_name_res":"app_service_account_01_credit_exp.json",
-	"credential_file_name_res":"app_service_account_02_dom_clean.json",
-	"credential_file_name_res":"app_service_account_03_lib_islands.json",
-	"credential_file_name_res":"app_service_account_04_tec_news.json",
 	"last":"key"
 }

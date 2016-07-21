@@ -2,6 +2,8 @@
 	
 	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
 
+	<a href="https://console.developers.google.com/iam-admin/quotas?project=credit-expansion"    target="quota">Check Quotas</a> <br />
+
 	<form action='{{ pref .FormAction }}'>
 		<input type="input"  name="Start"       id="Start"      value="{{.ParamStart}}" >        <br />
 		<input type="input"  name="Count"       id="Count"      value="{{.ParamCount}}" >        <br />
@@ -9,7 +11,7 @@
 	</form>
 
 	{{if ne .Url "" }}
-		<a href='{{.Url}}'  target='second' >{{.Url}}</a><br>
+		<a href='{{.Url}}'     target='second' >{{.Url}}</a><br>
 	{{end}}
 	{{if ne .UrlCmp "" }}
 		<a href='{{.UrlCmp}}'  target='second' >{{.UrlCmp}}</a><br>

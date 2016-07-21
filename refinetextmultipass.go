@@ -179,6 +179,8 @@ func refineTextMultiPass(c *iris.Context) {
 			}
 
 		}
+		logx.Printf("---------text refinement finished for--%v-%v-----", start, end)
+
 	}
 
 	s := struct {

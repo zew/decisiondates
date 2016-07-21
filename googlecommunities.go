@@ -1,9 +1,10 @@
-package main
+﻿package main
 
 import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -18,6 +19,17 @@ import (
 	"github.com/zew/util"
 )
 
+func customSearchServiceWrap(c *iris.Context) *cus.Service {
+	cseService, err := customSearchService()
+	if err != nil {
+		c.Text(200, err.Error())
+		c.StopExecution()
+	} else {
+		logx.Printf("CSE client successfully retrieved")
+	}
+	return cseService
+}
+
 func customSearchService() (*cus.Service, error) {
 
 	// Alternative way to get a client;
@@ -30,21 +42,21 @@ func customSearchService() (*cus.Service, error) {
 
 	//Get the config from the json key file with the correct scope
 	// data, err := ioutil.ReadFile("app_service_account_lib_islands.json")
-	data, err := ioutil.ReadFile(config.Config.CredentialFileName)
+	data, err := ioutil.ReadFile(config.CredentialFileName(false))
 	if err != nil {
-		fmt.Printf("#1\t%v", err)
+		logx.Printf("#1\t%v", err)
 		return nil, err
 	}
 	conf, err := google.JWTConfigFromJSON(data, "https://www.googleapis.com/auth/cse")
 	if err != nil {
-		fmt.Printf("#2\t%v", err)
+		logx.Printf("#2\t%v", err)
 		return nil, err
 	}
 	client := conf.Client(oauth2.NoContext)
 
 	cses, err := cus.New(client)
 	if err != nil {
-		fmt.Printf("#3\t%v", err)
+		logx.Printf("#3\t%v", err)
 		return nil, err
 	}
 
@@ -90,12 +102,9 @@ func results(c *iris.Context) {
 			logx.Printf("%-4v  %-5v  %v\n", i, communities[i].Id, communities[i].Name)
 		}
 
-		cseService, err := customSearchService()
-		if err != nil {
-			c.Text(200, err.Error())
-			return
-		}
+		cseService := customSearchServiceWrap(c)
 
+	Label1:
 		for i := 0; i < len(communities); i++ {
 
 			display += fmt.Sprintf("============================\n")
@@ -122,7 +131,16 @@ func results(c *iris.Context) {
 				search.Start(int64(start))
 				call, err := search.Do()
 				if err != nil {
-					c.Text(200, err.Error())
+					errStr := strings.ToLower(err.Error())
+					if strings.Contains(errStr, "daily limit exceeded") {
+						config.CredentialFileName(true)
+						msg := fmt.Sprintf("CSE client needs re-initiation at community %v\n", i)
+						logx.Printf(msg)
+						display += msg
+						// c.StopExecution()
+						break Label1
+					}
+					c.Text(200, "search.Do: "+err.Error())
 					return
 				}
 				for index, r := range call.Items {
