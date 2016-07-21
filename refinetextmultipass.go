@@ -43,12 +43,12 @@ func refineTextMultiPass(c *iris.Context) {
 
 	//
 	// original regex: ("[0-9]{2}[./ ]+[0-9]{2}[./ ]+[0-9]{4}")
-	weekdays := "1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|01|02|03|04|05|06|07|08|09"
-	monthsLong := "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
+	monthDays := "01|02|03|04|05|06|07|08|09|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31"
 	monthsShort := "Jan|Feb|Mrz|Apr|Mai|Jun|Jul|Aug|Sept|Sep|Okt|Nov|Dez"
-	monthsNumbered := "1|2|3|4|5|6|7|8|9|01|02|03|04|05|06|07|08|09|10|11|12"
+	monthsLong := "Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember"
+	monthsNumbered := "01|02|03|04|05|06|07|08|09|1|2|3|4|5|6|7|8|9|10|11|12"
 	yearsLong := "2010|2011|2012|2013|2014|2015|2016"
-	all3 := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", weekdays, monthsLong, monthsShort, monthsNumbered, yearsLong)
+	all3 := fmt.Sprintf("((%v)[./\\s]+(%v|%v|%v)[./\\s]+(%v))[^0-9]+", monthDays, monthsShort, monthsLong, monthsNumbered, yearsLong)
 	r4, err := regexp.Compile(all3)
 	util.CheckErr(err)
 	rs = append(rs, r4)
@@ -141,6 +141,32 @@ func refineTextMultiPass(c *iris.Context) {
 
 			}
 
+			// And again for nearby dates
+			for j := 0; j < len(pages); j++ {
+
+				p := pages[j]
+
+				if hits.HasRegExesHitsAtPage(p.Number, []int{0, 1}) ||
+					hits.HasRegExesHitsAtPage(p.Number-1, []int{0, 1}) ||
+					hits.HasRegExesHitsAtPage(p.Number+1, []int{0, 1}) ||
+					false {
+
+					matchPosAll := rs[3].FindAllStringSubmatchIndex(p.Content, -1)
+					for _, occurrence := range matchPosAll {
+						h := Hit{}
+						h.PageNum = p.Number
+						h.RegExId = 3
+						h.Start = occurrence[2] // the second sub-match; occurrence[2:4]
+						h.Stop = occurrence[3]
+						h.Pct = 100 * occurrence[2] / len(p.Content)
+						h.PageExtract = snippetIt(occurrence[2:4], p.Content, 20, 110)
+						hits[p.Number] = append(hits[p.Number], h)
+					}
+				}
+
+			}
+
+			// Now assemble display output
 			if hits.HasRegExesHitsAtAnyOnePage([]int{0, 1}) {
 				display += fmt.Sprintf("<a href='%v' target='pdf'>%v: %v</a>\n",
 					pdf.Url, pdf.CommunityName, pdf.Title)
@@ -148,6 +174,7 @@ func refineTextMultiPass(c *iris.Context) {
 				for j := 0; j < len(pages); j++ {
 					p := pages[j]
 					if hits.HasRegExesHitsAtPage(p.Number, []int{0, 1}) {
+
 						display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n",
 							pdf.Url, p.Number, p.Number)
 						hitsByPct := hits.HitsPerPageSortedByPct(p.Number)
