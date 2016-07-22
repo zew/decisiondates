@@ -88,9 +88,9 @@ func refineTextMultiPass(c *iris.Context) {
 			sql := `SELECT 	*
 			FROM 			` + gorpx.TableName(mdl.Page{}) + ` t1
 			WHERE 			1=1
-				AND		page_url = :page_url   `
+				AND		pdf_url = :pdf_url   `
 			args := map[string]interface{}{
-				"page_url": pdf.Url,
+				"pdf_url": pdf.Url,
 			}
 			_, err = gorpx.DBMap().Select(&pages, sql, args)
 			util.CheckErr(err)
@@ -175,8 +175,9 @@ func refineTextMultiPass(c *iris.Context) {
 					p := pages[j]
 					if hits.HasRegExesHitsAtPage(p.Number, []int{0, 1}) {
 
-						display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n",
-							pdf.Url, p.Number, p.Number)
+						display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n", pdf.Url, p.Number, p.Number)
+						display += fmt.Sprintf(`<a onclick="openDecision(%v);" href="javascript:void(0);"  >Enter</a>`, p.Id)
+						display += "\n"
 						hitsByPct := hits.HitsPerPageSortedByPct(p.Number)
 						lastTypes := []int{}
 						for _, hitByPct := range hitsByPct {

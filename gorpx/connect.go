@@ -3,10 +3,13 @@ package gorpx
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"reflect"
 
 	"github.com/zew/assessmentratedate/config"
 	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/awis/gorpx"
 	"github.com/zew/gorp"
 	"github.com/zew/logx"
 	"github.com/zew/util"
@@ -87,9 +90,21 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	{
 		mp := IndependentDbMapper(db)
 		t := mp.AddTable(mdl.Page{})
+		t.SetUniqueTogether("page_url", "page_number")
+		err = mp.CreateTables()
+		if err != nil {
+			logx.Printf("error creating table: %v", err)
+		} else {
+			mp.CreateIndex()
+		}
+	}
+
+	{
+		mp := IndependentDbMapper(db)
+		t := mp.AddTable(mdl.Decision{})
 		// t.ColMap("domain_name").SetUnique(true)
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
-		t.SetUniqueTogether("page_url", "page_number")
+		t.SetUniqueTogether("community_key", "decision_for_year")
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
@@ -102,6 +117,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 	dbmap.AddTable(mdl.Community{})
 	dbmap.AddTable(mdl.Pdf{})
 	dbmap.AddTable(mdl.Page{})
+	dbmap.AddTable(mdl.Decision{})
 
 	return dbmap
 
@@ -142,4 +158,11 @@ func IndependentDbMapper(db *sql.DB) *gorp.DbMap {
 		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
 	}
 	return dbmap
+}
+
+func TraceOn() {
+	gorpx.DBMap().TraceOn("gorp: ", log.New(os.Stdout, "", 0))
+}
+func TraceOff() {
+	gorpx.DBMap().TraceOff()
 }

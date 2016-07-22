@@ -25,7 +25,20 @@ type Pdf struct {
 
 type Page struct {
 	Id      int    `db:"page_id, primarykey, autoincrement"`
-	Url     string `db:"page_url, size:600, not null"`     // SetUniqueTogether(page_url, page_number)
+	Url     string `db:"pdf_url, size:600, not null"`      // SetUniqueTogether(page_url, page_number)
 	Number  int    `db:"page_number, not null"`            // SetUniqueTogether(page_url, page_number)
 	Content string `db:"page_text, size:131072, not null"` // text (64k) does not suffice; make it mediumtext.
+}
+
+type PdfJoinPage struct {
+	Pdf
+	Page
+}
+
+type Decision struct {
+	Id            int    `db:"decision_id, primarykey, autoincrement"`
+	CommunityKey  string `db:"community_key, size:40, not null"`
+	CommunityName string `db:"community_name, size:200, not null"`
+	ForYear       int    `db:"decision_for_year, not null"`
+	PageId        int    `db:"page_id, not null"`
 }

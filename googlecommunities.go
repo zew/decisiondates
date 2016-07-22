@@ -116,7 +116,10 @@ func results(c *iris.Context) {
 			search := cseService.Cse.List(communities[i].Name)
 			search.Cx("000184963688878042004:kcoarvtcg7q")
 			// search.ExactTerms(communities[i].Key)
-			search.ExcludeTerms("factfish")
+
+			// www.aeksh.de - aerztekammer
+			search.ExcludeTerms("factfish www.aeksh.de")
+
 			search.OrTerms("hebesätze hebesatz")
 			search.FileType("pdf")
 			search.Safe("off")
