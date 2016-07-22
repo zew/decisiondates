@@ -37,8 +37,9 @@ type PdfJoinPage struct {
 
 type Decision struct {
 	Id            int    `db:"decision_id, primarykey, autoincrement"`
-	CommunityKey  string `db:"community_key, size:40, not null"`
+	CommunityKey  string `db:"community_key, size:40, not null"` // SetUniqueTogether(community_key, decision_for_year) // community_name might be duplicated
 	CommunityName string `db:"community_name, size:200, not null"`
-	ForYear       int    `db:"decision_for_year, not null"`
-	PageId        int    `db:"page_id, not null"`
+	ForYear       int    `db:"decision_for_year, not null"` // SetUniqueTogether(community_key, decision_for_year) // community_name might be duplicated
+	DecisionDate  string `db:"decision_date, size:12, not null"`
+	PageId        int    `db:"page_id, not null"` // the 'source'
 }

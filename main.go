@@ -93,6 +93,7 @@ func main() {
 	i01.Get(Pref(PathProcessPdfs), processPdf)
 	i01.Get(Pref(RefineTextMultiPass), refineTextMultiPass)
 	i01.Get(Pref(UpdateDecisionDate), updateDecisionDate)
+	i01.Post(Pref(UpdateDecisionDate), updateDecisionDate)
 
 	logx.Printf("setting up sql server...")
 	gorpx.DBMap()

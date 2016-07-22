@@ -176,7 +176,8 @@ func refineTextMultiPass(c *iris.Context) {
 					if hits.HasRegExesHitsAtPage(p.Number, []int{0, 1}) {
 
 						display += fmt.Sprintf("<a href='%v#page=%v' target='pdf'>Seite %02v</a>\n", pdf.Url, p.Number, p.Number)
-						display += fmt.Sprintf(`<a onclick="openDecision(%v);" href="javascript:void(0);"  >Enter</a>`, p.Id)
+						display += fmt.Sprintf(`<a onclick="openDecision(%v,%v);" href="javascript:void(0);"  >Decide</a>`,
+							p.Id, pdf.Id)
 						display += "\n"
 						hitsByPct := hits.HitsPerPageSortedByPct(p.Number)
 						lastTypes := []int{}

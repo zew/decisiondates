@@ -4,17 +4,41 @@
 	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
 
 
-	<form action='{{ pref .FormAction }}'>
+	<form action='{{ pref .FormAction }}' method='POST'>
 		Gemeindename und Schlüssel: 
-		<input type="input"  name="commName"    id="commName"   value="{{.ParamCommName}}"   >     
-		<input type="input"  name="commKey"     id="commKey"    value="{{.ParamCommKey}}"    >     <br />
+		<input type="text"  name="CommName"    id="CommName"   value="{{.ParamCommName}}"    />     
+		<input type="text"  name="CommKey"     id="CommKey"    value="{{.ParamCommKey}}"     />     <br />
 
-		Source Page Id <input type="input"  name="srcPageId"   id="srcPageId"  value="{{.ParamSrcPageId}}"  >     <br />
-		<input type="submit" name="submit"      id=""           value="Submit" accesskey="s" >     <br />
+		Source Pdf Id - Source Page Id 
+		<input type="text"   name="SrcPdfId"    id="SrcPdfId"   value="{{.ParamSrcPdfId}}"   />     
+		<input type="text"   name="SrcPageId"   id="SrcPageId"  value="{{.ParamSrcPageId}}"  />     <br />
+		<input type="Submit" name="Submit1"     id="Submit1"    value="Submit" accesskey="s" />     <br />
 
 		<br />
 		Abweichender Name 
-		<input type="input"  name="deviatingCommName"    id="deviatingCommName"   value="{{.ParamDeviatingCommName}}"   >     <br />
+		<input type="text"  name="DeviatingCommName"    id="DeviatingCommName"   value="{{.ParamDeviatingCommName}}"   > <br />
+	
+
+	<!-- 
+	</form>
+	<form action='{{ pref .FormAction }}'>
+	-->
+
+		<br />
+		Decision Data<br />
+		{{ range $Idx, $Dec := .Decisions }}
+			Decision Id: {{$Dec.Id}}
+			<input type="hidden" name="Decisions[{{$Idx}}].Id"           id="Id"            value="{{$Dec.Id}}"            />
+			<input type="text"   name="Decisions[{{$Idx}}].ForYear"      id="ForYear"       value="{{$Dec.ForYear}}"       />     
+			<input type="text"   name="Decisions[{{$Idx}}].DecisionDate" id="DecisionDate"  value="{{$Dec.DecisionDate}}"  />     
+			<input type="text"   name="Decisions[{{$Idx}}].PageId"       id="PageId"        value="{{$Dec.PageId}}"        />   <br />
+		{{end}}
+
+
+		<input type="submit" name="Submit2"      id="Submit2"       value="Submit Decision Date"  />     <br />
+	<!-- 
+	-->
+
 
 	</form>
 
@@ -27,5 +51,8 @@
 		>{{ .StructDump }}
 		</div>
 	{{end}}
+
+
+
 
 </div>

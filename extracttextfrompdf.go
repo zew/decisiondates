@@ -149,13 +149,13 @@ func processPdf(c *iris.Context) {
 					}
 
 					args := map[string]interface{}{
-						"page_url":    p.Url,
+						"pdf_url":     p.Url,
 						"page_number": p.Number,
 					}
 
 					primKey, err := gorpx.DBMap().SelectInt("select page_id from "+
 						gorpx.TableName(p)+
-						" where page_url = :page_url AND page_number = :page_number",
+						" where pdf_url = :pdf_url AND page_number = :page_number",
 						args)
 
 					util.CheckErr(err)

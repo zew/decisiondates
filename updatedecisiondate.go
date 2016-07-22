@@ -19,31 +19,58 @@ func updateDecisionDate(c *iris.Context) {
 	var err error
 	display := ""
 
+	{
+		type FormDecisions struct {
+			CommName          string
+			CommKey           string
+			SrcPageId         int
+			SrcPdfId          int
+			DeviatingCommName string
+			Submit1, Submit2  string
+			Decisions         []mdl.Decision
+		}
+		frm := FormDecisions{}
+		if true || c.IsPost() {
+			err = c.ReadForm(&frm)
+			if err != nil {
+				logx.Println("error parsing form", err.Error())
+			}
+			logx.Printf("form was: %v %v", frm.CommKey, frm.CommName)
+			for idx, dec := range frm.Decisions {
+				logx.Printf("%v  %v %v %v %v", idx, dec.Id, dec.ForYear, dec.DecisionDate, dec.PageId)
+			}
+		}
+	}
+
 	pdfPage := mdl.PdfJoinPage{}
 
 	//
 	//
-	srcPageId := util.EffectiveParamInt(c, "srcPageId", -1)
+	srcPageId := util.EffectiveParamInt(c, "SrcPageId", -1)
+	srcPdfId := util.EffectiveParamInt(c, "SrcPdfId", -1)
 	if srcPageId > 0 {
 		sql := `SELECT 
 					*
 			FROM 			    ` + gorpx.TableName(mdl.Pdf{}) + `  t1
 					 INNER JOIN ` + gorpx.TableName(mdl.Page{}) + ` t2 USING(pdf_url)
 			WHERE 			1=1
+				AND		t1.pdf_id  =  :src_pdf_id
 				AND		t2.page_id =  :src_page_id
 			`
 		args := map[string]interface{}{
+			"src_pdf_id":  srcPdfId,
 			"src_page_id": srcPageId,
 		}
 		err = gorpx.DBMap().SelectOne(&pdfPage, sql, args)
 		util.CheckErr(err)
-		display += fmt.Sprintf("For srcPageId %v:  Found %v %v - page %v\n", srcPageId, pdfPage.Pdf.CommunityName,
-			pdfPage.Pdf.CommunityKey, pdfPage.Page.Number)
+		display += fmt.Sprintf("%-18v: %v    page %v    (srcPageId %v) \n",
+			pdfPage.Pdf.CommunityKey, pdfPage.Pdf.CommunityName,
+			pdfPage.Page.Number, srcPageId)
 	}
 
 	//
 	// Deviating
-	dCN := util.EffectiveParam(c, "deviatingCommName", "")
+	dCN := util.EffectiveParam(c, "DeviatingCommName", "")
 	if dCN != "" {
 		dCN = strings.TrimSpace(dCN)
 		dCN = strings.ToLower(dCN)
@@ -65,11 +92,51 @@ func updateDecisionDate(c *iris.Context) {
 		_, err = gorpx.DBMap().Select(&communities, sql, args)
 		util.CheckErr(err)
 
-		display += fmt.Sprintf("Found %v hit for %v\n", len(communities), dCN)
-		for i := 0; i < len(communities); i++ {
-			community := communities[i]
-			display += fmt.Sprintf("%-5v - %18v: %v\n", community.Id, community.Key, community.Name)
+		if len(communities) > 1 {
+			display += fmt.Sprintf("Found %v hit for %v\n", len(communities), dCN)
+			for i := 0; i < len(communities); i++ {
+				community := communities[i]
+				display += fmt.Sprintf("%-18v: %v\n", community.Key, community.Name)
+			}
 		}
+		if len(communities) == 1 {
+			display += fmt.Sprintf("Override %v\n", pdfPage.Pdf.CommunityName)
+			display += fmt.Sprintf("%-18v: %v\n", communities[0].Key, communities[0].Name)
+			pdfPage.Pdf.CommunityName = communities[0].Name
+			pdfPage.Pdf.CommunityKey = communities[0].Key
+		}
+	}
+
+	//
+	//
+	decisions := []mdl.Decision{}
+	if pdfPage.Pdf.CommunityKey != "" {
+		sql := `SELECT 
+					*
+			FROM 			    ` + gorpx.TableName(mdl.Decision{}) + `  t1
+			WHERE 			1=1
+				AND		t1.community_key =  :community_key
+			`
+		args := map[string]interface{}{
+			"community_key": pdfPage.Pdf.CommunityKey,
+		}
+		_, err := gorpx.DBMap().Select(&decisions, sql, args)
+		util.CheckErr(err)
+		for _, decision := range decisions {
+			display += fmt.Sprintf("  decision: %v - %v - derived from %v\n", decision.ForYear, decision.DecisionDate, decision.PageId)
+		}
+
+		//
+		// some empty
+		dec := mdl.Decision{}
+		dec.PageId = srcPageId
+		dec.ForYear = 2015
+		dec.DecisionDate = "01.01.2015"
+		decisions = append(decisions, dec)
+		dec.ForYear = 2016
+		dec.DecisionDate = "11.11.2015"
+		decisions = append(decisions, dec)
+
 	}
 
 	logx.Printf("---------decision date changed for %q-------", dCN)
@@ -79,19 +146,19 @@ func updateDecisionDate(c *iris.Context) {
 		Title     string
 		Links     []struct{ Title, Url string }
 
-		FormAction     string
+		FormAction string
+
 		ParamSrcPageId string
+		ParamSrcPdfId  string
 
 		ParamCommName string
 		ParamCommKey  string
 
 		ParamDeviatingCommName string
 
-		Url    string
-		UrlCmp string
+		Decisions []mdl.Decision
 
 		StructDump template.HTML
-		RespBytes  template.HTML
 	}{
 		HTMLTitle: AppName() + " Enter decision date",
 		Title:     AppName() + " Enter decision date",
@@ -101,10 +168,15 @@ func updateDecisionDate(c *iris.Context) {
 
 		FormAction: UpdateDecisionDate,
 
-		ParamCommName:          pdfPage.Pdf.CommunityName,
-		ParamCommKey:           pdfPage.Pdf.CommunityKey,
+		ParamCommName: pdfPage.Pdf.CommunityName,
+		ParamCommKey:  pdfPage.Pdf.CommunityKey,
+
 		ParamDeviatingCommName: dCN,
-		ParamSrcPageId:         util.EffectiveParam(c, "srcPageId", ""),
+
+		ParamSrcPageId: util.EffectiveParam(c, "SrcPageId", ""),
+		ParamSrcPdfId:  util.EffectiveParam(c, "SrcPdfId", ""),
+
+		Decisions: decisions,
 	}
 
 	err = c.Render("update-decision-date.html", s)

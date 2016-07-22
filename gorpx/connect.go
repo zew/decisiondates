@@ -104,7 +104,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		t := mp.AddTable(mdl.Decision{})
 		// t.ColMap("domain_name").SetUnique(true)
 		// t.AddIndex("idx_name_desc", "Btree", []string{"domain_name", "rank_code"})
-		t.SetUniqueTogether("community_key", "decision_for_year")
+		t.SetUniqueTogether("community_key", "decision_for_year") //
 		err = mp.CreateTables()
 		if err != nil {
 			logx.Printf("error creating table: %v", err)
