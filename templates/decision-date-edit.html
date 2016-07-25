@@ -1,0 +1,73 @@
+
+<div style='margin:0 20px;margin-top:20px;width: 80%;text-align:left;'>
+	
+	<p style='font-size:14px;margin-bottom:-2px;'>{{.Title}}</p>
+
+	{{if ne .FlashMsg "" }}
+		<p  class='flash-msg-area'
+			style='font-size:14px;
+				padding:8px;
+				white-space: pre-line;
+				'
+		>{{.FlashMsg}}</p>
+	{{end}}
+
+
+	<form action='{{ pref .FormAction1 }}' >
+		<input type="hidden"   name="CommName"    id="CommName"   value="{{.ParamCommName}}"    />     
+		<input type="hidden"   name="CommKey"     id="CommKey"    value="{{.ParamCommKey}}"     />     
+		<input type="hidden"   name="SrcPdfId"    id="SrcPdfId"   value="{{.ParamSrcPdfId}}"   />     
+		<input type="hidden"   name="SrcPageId"   id="SrcPageId"  value="{{.ParamSrcPageId}}"  />     
+
+		<span class="ib-250">Abweichender Name: </span>	
+		<input type="text"   name="DeviatingCommName"    id="DeviatingCommName"   value="{{.ParamDeviatingCommName}}"  > <br />
+		<input type="Submit" name="Submit1"     id="Submit1"    value="Submit abweich. Name" accesskey="s" /> <br />
+	</form>
+
+
+	<hr>
+
+
+	<form action='{{ pref .FormAction2 }}' method='POST'>
+		<span class="ib-250">Gemeindename und Schlüssel: </span>	
+		<input class="ib-150" type="text"  name="CommName"    id="CommName"   value="{{.ParamCommName}}"    />     
+		<input class="ib-090" type="text"  name="CommKey"     id="CommKey"    value="{{.ParamCommKey}}"     /> 
+		<input class="ib-120" type="text"  name="DeviatingCommName"  id="DeviatingCommName" value="{{.ParamDeviatingCommName}}"  > <br />
+
+		
+		<span class="ib-250">Source Pdf Id - Source Page Id:</span>	
+		<input class="ib-090" type="text"   name="SrcPdfId"    id="SrcPdfId"   value="{{.ParamSrcPdfId}}"   />     
+		<input class="ib-090" type="text"   name="SrcPageId"   id="SrcPageId"  value="{{.ParamSrcPageId}}"  /> <br />
+
+		<br />
+		<span class="ib-150">Decision Data</span> <br />
+		{{ range $Idx, $Dec := .Decisions }}
+			<span  class="ib-200">Decision Id: {{$Dec.Id}}</span> 
+			<input style="width:080px;margin-right:24px;" type="hidden" name="Decisions[{{$Idx}}].Id"           id="Id"            value="{{$Dec.Id}}"            />
+			<input style="width:080px;margin-right:24px;" type="text"   name="Decisions[{{$Idx}}].ForYear"      id="ForYear"       value="{{$Dec.ForYear}}"       />     
+			<input style="width:120px;margin-right:24px;" type="text"   name="Decisions[{{$Idx}}].DecisionDate" id="DecisionDate"  value="{{$Dec.DecisionDate}}"  />     
+			<input style="width:120px;margin-right:24px;" type="text"   name="Decisions[{{$Idx}}].PageId"       id="PageId"        value="{{$Dec.PageId}}"        />   <br />
+		{{end}}
+
+
+		<input type="submit" name="Submit2"      id="Submit2"       value="Submit Decision Date"  /> <br />
+	<!-- 
+	-->
+
+
+	</form>
+
+	{{if ne .StructDump "" }}
+		<br/>
+		<div cols='145' rows='32' style='width: 90%; 
+				white-space: pre-line;
+				white-space: pre;
+				'
+		>{{ .StructDump }}
+		</div>
+	{{end}}
+
+
+
+
+</div>

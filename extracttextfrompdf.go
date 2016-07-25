@@ -143,9 +143,8 @@ func processPdf(c *iris.Context) {
 				}
 				err = gorpx.DBMap().Insert(&p)
 				if err != nil {
-					errStr := fmt.Sprintf("%v", err)
-					if !strings.Contains(errStr, "Error 1062: Duplicate entry") {
-						logx.Printf("insert error %v; trying updated", err)
+					if !strings.Contains(err.Error(), "Error 1062: Duplicate entry") {
+						logx.Printf("insert error %v; trying update", err)
 					}
 
 					args := map[string]interface{}{
@@ -192,8 +191,8 @@ func processPdf(c *iris.Context) {
 		StructDump template.HTML
 		RespBytes  template.HTML
 	}{
-		HTMLTitle: AppName() + " - download pdfs and extract their text content",
-		Title:     AppName() + " - download pdfs and extract their text content",
+		HTMLTitle: AppName() + " - Download pdfs and extract their text content",
+		Title:     AppName() + " - Download pdfs and extract their text content",
 		Links:     links,
 
 		StructDump: template.HTML(display),

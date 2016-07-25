@@ -225,8 +225,8 @@ func results(c *iris.Context) {
 		StructDump template.HTML
 		RespBytes  template.HTML
 	}{
-		HTMLTitle: AppName() + " search for pdf docs on each community",
-		Title:     AppName() + " search for pdf docs on each community",
+		HTMLTitle: AppName() + " - Search for pdf docs on each community",
+		Title:     AppName() + " - Search for pdf docs on each community",
 		Links:     links,
 
 		StructDump: template.HTML(display),

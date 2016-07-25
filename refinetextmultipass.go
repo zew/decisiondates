@@ -227,8 +227,8 @@ func refineTextMultiPass(c *iris.Context) {
 		StructDump template.HTML
 		RespBytes  template.HTML
 	}{
-		HTMLTitle: AppName() + " refine possible matches",
-		Title:     AppName() + " refine possible matches",
+		HTMLTitle: AppName() + " - Refine possible matches",
+		Title:     AppName() + " - Refine possible matches",
 		Links:     links,
 
 		StructDump: template.HTML(display),

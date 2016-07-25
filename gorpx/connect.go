@@ -9,7 +9,6 @@ import (
 
 	"github.com/zew/assessmentratedate/config"
 	"github.com/zew/assessmentratedate/mdl"
-	"github.com/zew/awis/gorpx"
 	"github.com/zew/gorp"
 	"github.com/zew/logx"
 	"github.com/zew/util"
@@ -161,8 +160,8 @@ func IndependentDbMapper(db *sql.DB) *gorp.DbMap {
 }
 
 func TraceOn() {
-	gorpx.DBMap().TraceOn("gorp: ", log.New(os.Stdout, "", 0))
+	DBMap().TraceOn("gorp: ", log.New(os.Stdout, "", 0))
 }
 func TraceOff() {
-	gorpx.DBMap().TraceOff()
+	DBMap().TraceOff()
 }

@@ -13,8 +13,8 @@ func index(c *iris.Context) {
 		Title     string
 		Links     []struct{ Title, Url string }
 	}{
-		HTMLTitle: AppName() + " main",
-		Title:     AppName() + " main",
+		HTMLTitle: AppName() + " - Main",
+		Title:     AppName() + " - Main",
 		Links:     links,
 	}
 

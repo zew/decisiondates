@@ -25,7 +25,8 @@ const (
 	PathCommunityResults = "/community-search-results"
 	PathProcessPdfs      = "/process-pdfs"
 	RefineTextMultiPass  = "/refine-text-multi-pass"
-	UpdateDecisionDate   = "/update-decision-date"
+	DecisionDateEdit     = "/decision-date-edit"
+	DecisionDateSave     = "/decision-date-save"
 )
 
 const maxPages = 300 // for large Pdf files: Ignore pages greater than
@@ -36,7 +37,7 @@ var links = []struct{ Title, Url string }{
 	{"Search Results per Community", PathCommunityResults},
 	{"Extract Text from PDF Files", PathProcessPdfs},
 	{"Refine Text Multipass", RefineTextMultiPass},
-	{"Update Decision Date", UpdateDecisionDate},
+	{"Update Decision Date", DecisionDateEdit},
 }
 
 // The url path prefix
@@ -92,8 +93,8 @@ func main() {
 	i01.Get(Pref(PathCommunityResults), results)
 	i01.Get(Pref(PathProcessPdfs), processPdf)
 	i01.Get(Pref(RefineTextMultiPass), refineTextMultiPass)
-	i01.Get(Pref(UpdateDecisionDate), updateDecisionDate)
-	i01.Post(Pref(UpdateDecisionDate), updateDecisionDate)
+	i01.Get(Pref(DecisionDateEdit), decisionDateEdit)
+	i01.Post(Pref(DecisionDateSave), decisionDateSave)
 
 	logx.Printf("setting up sql server...")
 	gorpx.DBMap()
