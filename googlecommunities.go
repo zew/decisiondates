@@ -12,9 +12,10 @@ import (
 
 	"github.com/kataras/iris"
 
-	"github.com/zew/assessmentratedate/config"
-	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/config"
+	"github.com/zew/decisiondates/gorpx"
+	"github.com/zew/decisiondates/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -71,10 +72,11 @@ func results(c *iris.Context) {
 	respBytes := []byte{}
 	strUrl := ""
 
-	if util.EffectiveParam(c, "submit", "none") != "none" {
+	if irisx.EffectiveParam(c, "submit", "none") != "none" {
 
-		start := util.EffectiveParamInt(c, "Start", 1)
-		end := util.EffectiveParamInt(c, "Start", 1) + util.EffectiveParamInt(c, "Count", 5)
+		start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
+		cnt, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+		end := start + cnt
 
 		//
 		//
@@ -236,10 +238,10 @@ func results(c *iris.Context) {
 		UrlCmp:     "https://www.googleapis.com/customsearch/v1?q=Schwetzingen&key=AIzaSyDS56qRpWj3o_xfGqxwbP5oqW9qr72Poww&cx=000184963688878042004:kcoarvtcg7q",
 		FormAction: PathCommunityResults,
 
-		Gemeinde:   util.EffectiveParam(c, "Gemeinde", "Schwetzingen"),
-		Schluessel: util.EffectiveParam(c, "Schluessel", "08 2 26 084"),
-		ParamStart: util.EffectiveParam(c, "Start", "1"),
-		ParamCount: util.EffectiveParam(c, "Count", "5"),
+		Gemeinde:   irisx.EffectiveParam(c, "Gemeinde", "Schwetzingen"),
+		Schluessel: irisx.EffectiveParam(c, "Schluessel", "08 2 26 084"),
+		ParamStart: irisx.EffectiveParam(c, "Start", "1"),
+		ParamCount: irisx.EffectiveParam(c, "Count", "5"),
 	}
 
 	err = c.Render("results.html", s)

@@ -8,8 +8,8 @@ import (
 	"github.com/kataras/iris"
 	"github.com/kataras/iris/config"
 
-	appcfg "github.com/zew/assessmentratedate/config"
-	"github.com/zew/assessmentratedate/gorpx"
+	appcfg "github.com/zew/decisiondates/config"
+	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/logx"
 )
 

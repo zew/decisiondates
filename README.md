@@ -1,7 +1,7 @@
-# Parsing Pdf files in search of a particular date
+# Parsing PDF files in search of particular patterns
 
 - Google custom search client, saving query results to database
 
-- Pdf text extraction
+- PDF text extraction
 
 - Multi pass searching for patterns of adjacent regex hits

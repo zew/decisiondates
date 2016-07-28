@@ -2,18 +2,18 @@
 	"email": "buchmann@zew.de",
 	"version_major": 0,
 	"version_minor": 81,
-	"app_name": "Assessment Rate Date",
+	"app_name": "Decision Dates of Local Tax Rates",
 	"google_custom_search_id": "000184963688878042004:kcoarvtcg7q",
-	"appengine_server_key": "AIzaSyDS56qRpWj3o_xfGqxwbP5oqW9qr72Poww",
+	"appengine_server_key": "secret",
 	"sql_lite": false,
 	"sql_hosts": 
 	{ 
-		"dev":{
+		"dsn1":{
 	 		"user":    "pbberlin",
 	 		"host":    "127.0.0.1",
 	 		"host_remote":    "10.8.1.215",
 	 		"port":    "3306",
-	 		"db_name": "assessment_rate_date",
+	 		"db_name": "decision_date",
 	 		"connection_params":{
 				"charset":   "utf8mb4,utf8",
 				"loc":       "US%2FPacific",

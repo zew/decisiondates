@@ -8,8 +8,9 @@ import (
 
 	"github.com/kataras/iris"
 
-	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/gorpx"
+	"github.com/zew/decisiondates/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -23,8 +24,8 @@ func decisionDateEdit(c *iris.Context) {
 
 	//
 	//
-	srcPageId := util.EffectiveParamInt(c, "SrcPageId", -1)
-	srcPdfId := util.EffectiveParamInt(c, "SrcPdfId", -1)
+	srcPageId, _, _ := irisx.EffectiveParamInt(c, "SrcPageId", -1)
+	srcPdfId, _, _ := irisx.EffectiveParamInt(c, "SrcPdfId", -1)
 	if srcPageId > 0 {
 		sql := `SELECT 
 					*
@@ -47,7 +48,7 @@ func decisionDateEdit(c *iris.Context) {
 
 	//
 	// Deviating
-	dCN := util.EffectiveParam(c, "DeviatingCommName", "")
+	dCN := irisx.EffectiveParam(c, "DeviatingCommName", "")
 	dKey, dName, displ2 := deviatingComm(dCN)
 	display += displ2
 	if dKey != "" {
@@ -126,8 +127,8 @@ func decisionDateEdit(c *iris.Context) {
 
 		ParamDeviatingCommName: dCN,
 
-		ParamSrcPageId: util.EffectiveParam(c, "SrcPageId", ""),
-		ParamSrcPdfId:  util.EffectiveParam(c, "SrcPdfId", ""),
+		ParamSrcPageId: irisx.EffectiveParam(c, "SrcPageId", ""),
+		ParamSrcPdfId:  irisx.EffectiveParam(c, "SrcPdfId", ""),
 
 		Decisions: decisions,
 	}

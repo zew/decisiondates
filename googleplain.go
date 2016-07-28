@@ -7,9 +7,10 @@ import (
 	"net/url"
 
 	"github.com/kataras/iris"
-	"github.com/zew/assessmentratedate/config"
-	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/config"
+	"github.com/zew/decisiondates/gorpx"
+	"github.com/zew/decisiondates/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -37,9 +38,9 @@ func plainJsonResponse(c *iris.Context) (string, []byte, error) {
 	vals := map[string]string{
 		"key":   config.Config.AppEngineServerKey,
 		"cx":    config.Config.GoogleCustomSearchId,
-		"q":     util.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"),
-		"start": util.EffectiveParam(c, "Start", "1"),
-		"num":   util.EffectiveParam(c, "Count", "5"),
+		"q":     irisx.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"),
+		"start": irisx.EffectiveParam(c, "Start", "1"),
+		"num":   irisx.EffectiveParam(c, "Count", "5"),
 		"safe":  "off",
 	}
 

@@ -7,8 +7,8 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/zew/assessmentratedate/config"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/config"
+	"github.com/zew/decisiondates/mdl"
 	"github.com/zew/gorp"
 	"github.com/zew/logx"
 	"github.com/zew/util"
@@ -61,7 +61,7 @@ func DBMap(dbName ...string) *gorp.DbMap {
 
 	//
 	//
-
+	//
 	{
 		mp := IndependentDbMapper(db)
 		t := mp.AddTable(mdl.Community{})
@@ -137,7 +137,7 @@ func CheckRes(sqlRes sql.Result, err error) {
 	} else if affected > 0 {
 		logx.Printf("%d row(s) affected", affected)
 	} else if liId > 0 {
-		logx.Printf("%d liId", liId)
+		logx.Printf("%d lastInsertId", liId)
 	}
 }
 
@@ -153,6 +153,13 @@ func IndependentDbMapper(db *sql.DB) *gorp.DbMap {
 	var dbmap *gorp.DbMap
 	if config.Config.SQLite {
 		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+		// We have to enable foreign_keys for EVERY connection
+		// There is a gorp pull request, implementing this
+		hasFK1, err := dbmap.SelectStr("PRAGMA foreign_keys")
+		logx.Printf("PRAGMA foreign_keys is %v | err is %v", hasFK1, err)
+		dbmap.Exec("PRAGMA foreign_keys = true")
+		hasFK2, err := dbmap.SelectStr("PRAGMA foreign_keys")
+		logx.Printf("PRAGMA foreign_keys is %v | err is %v", hasFK2, err)
 	} else {
 		dbmap = &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{"InnoDB", "UTF8"}}
 	}

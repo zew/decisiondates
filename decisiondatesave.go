@@ -6,8 +6,9 @@ import (
 	"strings"
 
 	"github.com/kataras/iris"
-	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/gorpx"
+	"github.com/zew/decisiondates/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/util"
 )
 
@@ -21,9 +22,9 @@ func decisionDateSave(c *iris.Context) {
 			Pref(DecisionDateEdit) +
 				fmt.Sprintf(
 					"?SrcPageId=%v&SrcPdfId=%v&DeviatingCommName=%v",
-					util.EffectiveParam(c, "SrcPageId"),
-					util.EffectiveParam(c, "SrcPdfId"),
-					util.EffectiveParam(c, "DeviatingCommName"),
+					irisx.EffectiveParam(c, "SrcPageId"),
+					irisx.EffectiveParam(c, "SrcPdfId"),
+					irisx.EffectiveParam(c, "DeviatingCommName"),
 				),
 		)
 	}()

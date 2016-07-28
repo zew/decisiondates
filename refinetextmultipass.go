@@ -8,8 +8,9 @@ import (
 
 	"github.com/kataras/iris"
 
-	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/gorpx"
+	"github.com/zew/decisiondates/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -54,10 +55,11 @@ func refineTextMultiPass(c *iris.Context) {
 	rs = append(rs, r4)
 
 	//
-	if util.EffectiveParam(c, "submit", "none") != "none" {
+	if irisx.EffectiveParam(c, "submit", "none") != "none" {
 
-		start := util.EffectiveParamInt(c, "Start", 1)
-		end := util.EffectiveParamInt(c, "Start", 1) + util.EffectiveParamInt(c, "Count", 5)
+		start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
+		cnt, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+		end := start + cnt
 
 		//
 		//
@@ -237,8 +239,8 @@ func refineTextMultiPass(c *iris.Context) {
 		Url:        strUrl,
 		FormAction: RefineTextMultiPass,
 
-		ParamStart: util.EffectiveParam(c, "Start", "0"),
-		ParamCount: util.EffectiveParam(c, "Count", "3"),
+		ParamStart: irisx.EffectiveParam(c, "Start", "0"),
+		ParamCount: irisx.EffectiveParam(c, "Count", "3"),
 	}
 
 	err = c.Render("results.html", s)

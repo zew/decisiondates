@@ -13,8 +13,9 @@ import (
 	"github.com/kataras/iris"
 	"github.com/pbberlin/pdf"
 
-	"github.com/zew/assessmentratedate/gorpx"
-	"github.com/zew/assessmentratedate/mdl"
+	"github.com/zew/decisiondates/gorpx"
+	"github.com/zew/decisiondates/mdl"
+	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -26,10 +27,11 @@ func processPdf(c *iris.Context) {
 	respBytes := []byte{}
 	strUrl := ""
 
-	if util.EffectiveParam(c, "submit", "none") != "none" {
+	if irisx.EffectiveParam(c, "submit", "none") != "none" {
 
-		start := util.EffectiveParamInt(c, "Start", 1)
-		end := util.EffectiveParamInt(c, "Start", 1) + util.EffectiveParamInt(c, "Count", 5)
+		start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
+		cnt, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+		end := start + cnt
 
 		//
 		//
@@ -118,9 +120,20 @@ func processPdf(c *iris.Context) {
 					break
 				}
 
-				// logx.Printf("   opening page %v\n", j)
+				//
+				//
+				// page := rdr2.Page(j)
+				page := func() pdf.Page {
+					defer func() {
+						if r := recover(); r != nil {
+							err = fmt.Errorf("getting reader on a page recover: %v", r)
+						}
+					}()
+					return rdr2.Page(j)
+				}()
 
-				page := rdr2.Page(j)
+				//
+				//
 				cn, err := extractContent(&page)
 				if err != nil {
 					logx.Printf("Page_%002v: %v", j, err)
@@ -201,8 +214,8 @@ func processPdf(c *iris.Context) {
 		Url:        strUrl,
 		FormAction: PathProcessPdfs,
 
-		ParamStart: util.EffectiveParam(c, "Start", "0"),
-		ParamCount: util.EffectiveParam(c, "Count", "3"),
+		ParamStart: irisx.EffectiveParam(c, "Start", "0"),
+		ParamCount: irisx.EffectiveParam(c, "Count", "3"),
 	}
 
 	err = c.Render("results.html", s)
