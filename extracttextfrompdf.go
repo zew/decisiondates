@@ -10,27 +10,26 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"github.com/pbberlin/pdf"
 
 	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/decisiondates/mdl"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func processPdf(c *iris.Context) {
+func processPdf(c iris.Context) {
 
 	var err error
 	display := ""
 	respBytes := []byte{}
 	strUrl := ""
 
-	if irisx.EffectiveParam(c, "submit", "none") != "none" {
+	if EffectiveParam(c, "submit", "none") != "none" {
 
-		start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
-		cnt, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+		start := EffectiveParamInt(c, "Start", 1)
+		cnt := EffectiveParamInt(c, "Count", 5)
 		end := start + cnt
 
 		//
@@ -214,11 +213,11 @@ func processPdf(c *iris.Context) {
 		Url:        strUrl,
 		FormAction: PathProcessPdfs,
 
-		ParamStart: irisx.EffectiveParam(c, "Start", "0"),
-		ParamCount: irisx.EffectiveParam(c, "Count", "3"),
+		ParamStart: EffectiveParam(c, "Start", "0"),
+		ParamCount: EffectiveParam(c, "Count", "3"),
 	}
 
-	err = c.Render("results.html", s)
+	err = c.View("results.html", s)
 	util.CheckErr(err)
 
 }

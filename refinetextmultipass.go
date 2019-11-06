@@ -6,16 +6,15 @@ import (
 	"html/template"
 	"regexp"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 
 	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/decisiondates/mdl"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func refineTextMultiPass(c *iris.Context) {
+func refineTextMultiPass(c iris.Context) {
 
 	var err error
 	display := ""
@@ -55,10 +54,10 @@ func refineTextMultiPass(c *iris.Context) {
 	rs = append(rs, r4)
 
 	//
-	if irisx.EffectiveParam(c, "submit", "none") != "none" {
+	if EffectiveParam(c, "submit", "none") != "none" {
 
-		start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
-		cnt, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+		start := EffectiveParamInt(c, "Start", 1)
+		cnt := EffectiveParamInt(c, "Count", 5)
 		end := start + cnt
 
 		//
@@ -239,11 +238,11 @@ func refineTextMultiPass(c *iris.Context) {
 		Url:        strUrl,
 		FormAction: RefineTextMultiPass,
 
-		ParamStart: irisx.EffectiveParam(c, "Start", "0"),
-		ParamCount: irisx.EffectiveParam(c, "Count", "3"),
+		ParamStart: EffectiveParam(c, "Start", "0"),
+		ParamCount: EffectiveParam(c, "Count", "3"),
 	}
 
-	err = c.Render("results.html", s)
+	err = c.View("results.html", s)
 	util.CheckErr(err)
 
 }

@@ -55,7 +55,7 @@ func (h *Hits) HasRegExesHitsAtPage(PageNum int, RegExIds []int) bool {
 // Has hits for several denoted regexes - for the entire pdf - on the *same* page
 func (h *Hits) HasRegExesHitsAtAnyOnePage(RegExIds []int) bool {
 	hderef := *h
-	for pageNum, _ := range hderef {
+	for pageNum := range hderef {
 		if h.HasRegExesHitsAtPage(pageNum, RegExIds) {
 			return true
 		}

@@ -6,16 +6,16 @@ import (
 	"log"
 	"strings"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/sessions"
 
 	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/decisiondates/mdl"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func decisionDateEdit(c *iris.Context) {
+func decisionDateEdit(c iris.Context) {
 
 	var err error
 	display := ""
@@ -24,8 +24,8 @@ func decisionDateEdit(c *iris.Context) {
 
 	//
 	//
-	srcPageId, _, _ := irisx.EffectiveParamInt(c, "SrcPageId", -1)
-	srcPdfId, _, _ := irisx.EffectiveParamInt(c, "SrcPdfId", -1)
+	srcPageId := EffectiveParamInt(c, "SrcPageId", -1)
+	srcPdfId := EffectiveParamInt(c, "SrcPdfId", -1)
 	if srcPageId > 0 {
 		sql := `SELECT 
 					*
@@ -48,7 +48,7 @@ func decisionDateEdit(c *iris.Context) {
 
 	//
 	// Deviating
-	dCN := irisx.EffectiveParam(c, "DeviatingCommName", "")
+	dCN := EffectiveParam(c, "DeviatingCommName", "")
 	dKey, dName, displ2 := deviatingComm(dCN)
 	display += displ2
 	if dKey != "" {
@@ -114,7 +114,7 @@ func decisionDateEdit(c *iris.Context) {
 	}{
 		HTMLTitle: AppName() + " - Edit decision date",
 		Title:     AppName() + " - Edit decision date",
-		FlashMsg:  template.HTML(c.GetFlash(DecisionDateSave)),
+		FlashMsg:  template.HTML(sessions.Get(c).GetFlashString(DecisionDateSave)),
 		Links:     links,
 
 		StructDump: template.HTML(display),
@@ -127,13 +127,13 @@ func decisionDateEdit(c *iris.Context) {
 
 		ParamDeviatingCommName: dCN,
 
-		ParamSrcPageId: irisx.EffectiveParam(c, "SrcPageId", ""),
-		ParamSrcPdfId:  irisx.EffectiveParam(c, "SrcPdfId", ""),
+		ParamSrcPageId: EffectiveParam(c, "SrcPageId", ""),
+		ParamSrcPdfId:  EffectiveParam(c, "SrcPdfId", ""),
 
 		Decisions: decisions,
 	}
 
-	err = c.Render("decision-date-edit.html", s)
+	err = c.View("decision-date-edit.html", s)
 	util.CheckErr(err)
 
 }
