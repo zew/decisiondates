@@ -27,13 +27,21 @@ func DB() *sql.DB {
 	return db
 }
 
+func Env() string {
+	environ := os.Getenv("EXEC_ENVIRONMENT")
+	if environ == "" {
+		environ = "dev"
+	}
+	return environ
+}
+
 func DBMap(dbName ...string) *gorp.DbMap {
 
 	if dbmap != nil && db != nil {
 		return dbmap
 	}
 
-	sh := config.Config.SQLHosts[util.Env()]
+	sh := config.Config.SQLHosts[Env()]
 	var err error
 	// param docu at https://github.com/go-sql-driver/mysql
 	paramsJoined := "?"
@@ -49,7 +57,8 @@ func DBMap(dbName ...string) *gorp.DbMap {
 		db, err = sql.Open("sqlite3", "./main.sqlite")
 		util.CheckErr(err)
 	} else {
-		connStr2 := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", sh.User, util.EnvVar("SQL_PW"), sh.Host, sh.Port, sh.DBName, paramsJoined)
+		sqlPass, _ := util.EnvVar("SQL_PW")
+		connStr2 := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s%s", sh.User, sqlPass, sh.Host, sh.Port, sh.DBName, paramsJoined)
 		logx.Printf("gorp conn: %v", connStr2)
 		db, err = sql.Open("mysql", connStr2)
 		util.CheckErr(err)

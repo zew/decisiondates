@@ -6,11 +6,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 	"github.com/zew/decisiondates/config"
 	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/decisiondates/mdl"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
@@ -20,7 +19,7 @@ import (
 // and with some app engine credentials
 //
 // There is no need for a special oauth2 client.
-func plainJsonResponse(c *iris.Context) (string, []byte, error) {
+func plainJsonResponse(c iris.Context) (string, []byte, error) {
 
 	display := ""
 	respBytes := []byte{}
@@ -38,9 +37,9 @@ func plainJsonResponse(c *iris.Context) (string, []byte, error) {
 	vals := map[string]string{
 		"key":   config.Config.AppEngineServerKey,
 		"cx":    config.Config.GoogleCustomSearchId,
-		"q":     irisx.EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"),
-		"start": irisx.EffectiveParam(c, "Start", "1"),
-		"num":   irisx.EffectiveParam(c, "Count", "5"),
+		"q":     EffectiveParam(c, "Gemeinde", "Villingen-Schwenningen"),
+		"start": EffectiveParam(c, "Start", "1"),
+		"num":   EffectiveParam(c, "Count", "5"),
 		"safe":  "off",
 	}
 
@@ -63,17 +62,17 @@ func plainJsonResponse(c *iris.Context) (string, []byte, error) {
 
 	// Parse
 	if err != nil {
-		c.Text(200, err.Error())
+		c.WriteString(err.Error())
 		return display, respBytes, err
 	}
 
 	err = gorpx.DBMap().Insert(&community)
 	if err != nil {
-		c.Text(200, err.Error())
+		c.WriteString(err.Error())
 	}
 
 	display = util.IndentedDump(community)
-	// c.Text(200, display)
+	// c.WriteString(display)
 
 	return display, respBytes, nil
 }

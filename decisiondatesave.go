@@ -5,26 +5,27 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/sessions"
 	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/decisiondates/mdl"
-	"github.com/zew/irisx"
 	"github.com/zew/util"
 )
 
-func decisionDateSave(c *iris.Context) {
+func decisionDateSave(c iris.Context) {
 
 	var msg bytes.Buffer
+	sess := sessions.Get(c)
 
 	defer func() {
-		c.SetFlash(DecisionDateSave, msg.String())
+		sess.SetFlash(DecisionDateSave, msg.String())
 		c.Redirect(
 			Pref(DecisionDateEdit) +
 				fmt.Sprintf(
 					"?SrcPageId=%v&SrcPdfId=%v&DeviatingCommName=%v",
-					irisx.EffectiveParam(c, "SrcPageId"),
-					irisx.EffectiveParam(c, "SrcPdfId"),
-					irisx.EffectiveParam(c, "DeviatingCommName"),
+					EffectiveParam(c, "SrcPageId"),
+					EffectiveParam(c, "SrcPdfId"),
+					EffectiveParam(c, "DeviatingCommName"),
 				),
 		)
 	}()
@@ -40,10 +41,10 @@ func decisionDateSave(c *iris.Context) {
 	}
 
 	frm := FormDecisions{}
-	if c.IsPost() {
+	if c.Method() == iris.MethodPost {
 		err := c.ReadForm(&frm)
 		if err != nil {
-			msg.WriteString(fmt.Sprintf("Each form field must be accomodated in the struct! %v\n", err))
+			msg.WriteString(fmt.Sprintf("Each form field must be accommodated in the struct! %v\n", err))
 			return
 		}
 

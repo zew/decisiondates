@@ -1,4 +1,4 @@
-﻿package main
+package main
 
 import (
 	"fmt"
@@ -10,20 +10,19 @@ import (
 	"golang.org/x/oauth2/google"
 	cus "google.golang.org/api/customsearch/v1"
 
-	"github.com/kataras/iris"
+	"github.com/kataras/iris/v12"
 
 	"github.com/zew/decisiondates/config"
 	"github.com/zew/decisiondates/gorpx"
 	"github.com/zew/decisiondates/mdl"
-	"github.com/zew/irisx"
 	"github.com/zew/logx"
 	"github.com/zew/util"
 )
 
-func customSearchServiceWrap(c *iris.Context) *cus.Service {
+func customSearchServiceWrap(c iris.Context) *cus.Service {
 	cseService, err := customSearchService()
 	if err != nil {
-		c.Text(200, err.Error())
+		c.WriteString(err.Error())
 		c.StopExecution()
 	} else {
 		logx.Printf("CSE client successfully retrieved")
@@ -65,17 +64,17 @@ func customSearchService() (*cus.Service, error) {
 
 }
 
-func results(c *iris.Context) {
+func results(c iris.Context) {
 
 	var err error
 	display := ""
 	respBytes := []byte{}
 	strUrl := ""
 
-	if irisx.EffectiveParam(c, "submit", "none") != "none" {
+	if EffectiveParam(c, "submit", "none") != "none" {
 
-		start, _, _ := irisx.EffectiveParamInt(c, "Start", 1)
-		cnt, _, _ := irisx.EffectiveParamInt(c, "Count", 5)
+		start := EffectiveParamInt(c, "Start", 1)
+		cnt := EffectiveParamInt(c, "Count", 5)
 		end := start + cnt
 
 		//
@@ -145,7 +144,7 @@ func results(c *iris.Context) {
 						// c.StopExecution()
 						break Label1
 					}
-					c.Text(200, "search.Do: "+err.Error())
+					c.Writef("search.Do: %s", err.Error())
 					return
 				}
 				for index, r := range call.Items {
@@ -164,7 +163,7 @@ func results(c *iris.Context) {
 					pdf.SnippetGoogle = r.Snippet
 					err = gorpx.DBMap().Insert(&pdf)
 					if err != nil {
-						c.Text(200, err.Error())
+						c.WriteString(err.Error())
 					}
 				}
 				start = start + offset
@@ -238,13 +237,13 @@ func results(c *iris.Context) {
 		UrlCmp:     "https://www.googleapis.com/customsearch/v1?q=Schwetzingen&key=AIzaSyDS56qRpWj3o_xfGqxwbP5oqW9qr72Poww&cx=000184963688878042004:kcoarvtcg7q",
 		FormAction: PathCommunityResults,
 
-		Gemeinde:   irisx.EffectiveParam(c, "Gemeinde", "Schwetzingen"),
-		Schluessel: irisx.EffectiveParam(c, "Schluessel", "08 2 26 084"),
-		ParamStart: irisx.EffectiveParam(c, "Start", "1"),
-		ParamCount: irisx.EffectiveParam(c, "Count", "5"),
+		Gemeinde:   EffectiveParam(c, "Gemeinde", "Schwetzingen"),
+		Schluessel: EffectiveParam(c, "Schluessel", "08 2 26 084"),
+		ParamStart: EffectiveParam(c, "Start", "1"),
+		ParamCount: EffectiveParam(c, "Count", "5"),
 	}
 
-	err = c.Render("results.html", s)
+	err = c.View("results.html", s)
 	util.CheckErr(err)
 
 }

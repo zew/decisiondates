@@ -4,9 +4,10 @@ import (
 	"html/template"
 	"log"
 	"strings"
+	"time"
 
-	"github.com/kataras/iris"
-	"github.com/kataras/iris/config"
+	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/sessions"
 
 	appcfg "github.com/zew/decisiondates/config"
 	"github.com/zew/decisiondates/gorpx"
@@ -18,8 +19,6 @@ var funcMapAll = map[string]interface{}{
 	"title": strings.Title,
 	"toJS":  func(arg string) template.JS { return template.JS(arg) },
 }
-
-var irisConfig = config.Iris{}
 
 const (
 	PathCommunityResults = "/community-search-results"
@@ -61,30 +60,27 @@ func AppName(p ...string) string {
 }
 
 func main() {
-
-	// iris.Templates("./*.html")
-
 	log.SetFlags(log.Lshortfile)
 
-	var renderOptions = config.Template{
-		Directory:  "templates",
-		Extensions: []string{".tmpl", ".html"},
-		// RequirePartials: true,
-		HTMLTemplate: config.HTMLTemplate{
-			Funcs: funcMapAll,
-		},
+	i01 := iris.New()
+
+	view := iris.HTML("./templates", ".html").Layout("layout.html")
+	for k, v := range funcMapAll {
+		view.AddFunc(k, v)
 	}
+	i01.RegisterView(view)
 
-	irisConfig.Render.Template = renderOptions
-	irisConfig.Render.Template.Layout = "layout.html"
+	// Used to get and set flash messages on 'decisionedit'.
+	sessManager := sessions.New(sessions.Config{
+		Cookie:  "sessionid",
+		Expires: 2 * time.Hour,
+	})
+	i01.Use(sessManager.Handler())
 
-	i01 := iris.New(irisConfig)
-	// i01 := iris.Custom(iris.StationOptions{})
-
-	i01.Static(Pref("/js"), "./static/js/", 2)
+	i01.HandleDir(Pref("/js"), "./static/js/")
 	// i01.Static("/js", "./static/js/", 1)
-	i01.Static(Pref("/img"), "./static/img/", 2)
-	i01.Static(Pref("/css"), "./static/css/", 2)
+	i01.HandleDir(Pref("/img"), "./static/img/")
+	i01.HandleDir(Pref("/css"), "./static/css/")
 
 	i01.Get("/", index)
 	i01.Get(Pref(""), index)
@@ -101,6 +97,5 @@ func main() {
 	defer gorpx.DB().Close()
 
 	logx.Printf("starting http server...")
-	logx.Fatal(i01.ListenWithErr(":8082"))
-
+	logx.Fatal(i01.Run(iris.Addr(":8082"), iris.WithoutServerError(iris.ErrServerClosed)))
 }
